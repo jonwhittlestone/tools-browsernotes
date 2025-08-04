@@ -169,3 +169,289 @@ kbd {
     font-size: 12px;
     color: #6e6e6e;
 }
+
+h2 {
+    font-size: 18px;
+    font-weight: 400;
+    margin-bottom: 15px;
+    color: #e0e0e0;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.btn-primary {
+    background-color: #0061fe;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0051d5;
+}
+
+.btn-secondary {
+    background-color: #444;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #555;
+}
+
+.btn-small {
+    padding: 4px 12px;
+    font-size: 12px;
+}
+
+.btn-icon {
+    padding: 4px 8px;
+    background-color: #333;
+    color: white;
+    border-radius: 4px;
+    font-size: 18px;
+}
+
+.btn-icon:hover {
+    background-color: #444;
+}
+
+.dropbox-connected {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.connected-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #4CAF50;
+}
+
+.status-icon {
+    font-size: 18px;
+}
+
+.status-message {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #888;
+}
+
+.file-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.file-select {
+    flex: 1;
+    padding: 6px;
+    background-color: #2a2a2a;
+    color: white;
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+
+.file-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.file-input {
+    flex: 1;
+    padding: 6px;
+    background-color: #2a2a2a;
+    color: white;
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+
+.current-file {
+    padding: 8px;
+    background-color: #2a2a2a;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.sync-status {
+    padding: 12px;
+    background-color: #2a2a2a;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.sync-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #888;
+}
+
+/* Path navigator styles */
+.path-navigator {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 8px;
+    background-color: #2a2a2a;
+    border-radius: 4px;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #d4d4d4;
+}
+
+.breadcrumb-item {
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.breadcrumb-item.clickable {
+    cursor: pointer;
+    color: #4CAF50;
+}
+
+.breadcrumb-item.clickable:hover {
+    background-color: #333;
+}
+
+.breadcrumb-separator {
+    color: #888;
+    margin: 0 4px;
+}
+
+/* Folder browser styles */
+.folder-browser {
+    margin-bottom: 15px;
+}
+
+.folder-list {
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+
+.folder-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #333;
+}
+
+.folder-item:last-child {
+    border-bottom: none;
+}
+
+.folder-item:hover {
+    background-color: #333;
+}
+
+.folder-item.folder {
+    color: #4CAF50;
+}
+
+.folder-item.file {
+    color: #888;
+}
+
+.folder-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+/* File actions styles */
+.file-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.path-input-group,
+.filename-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.path-input-group label,
+.filename-input-group label {
+    min-width: 120px;
+    font-size: 12px;
+    color: #888;
+}
+
+.path-display {
+    flex: 1;
+    padding: 6px;
+    background-color: #1a1a1a;
+    color: #888;
+    border: 1px solid #333;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.file-selector {
+    margin-bottom: 15px;
+}
+
+.file-selector label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 12px;
+    color: #888;
+}
+
+/* Sync frequency selector */
+.sync-frequency-select {
+    padding: 6px;
+    background-color: #2a2a2a;
+    color: white;
+    border: 1px solid #444;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 200px;
+}
+
+/* Empty state styling */
+.folder-list:empty::after {
+    content: "This folder contains no subfolders";
+    display: block;
+    padding: 20px;
+    text-align: center;
+    color: #888;
+    font-style: italic;
+}
+
+/* Loading and error states */
+.folder-list .loading {
+    padding: 20px;
+    text-align: center;
+    color: #888;
+}
+
+.folder-list .error {
+    padding: 20px;
+    text-align: center;
+    color: #f44336;
+}

@@ -11,6 +11,7 @@
         <h1>Browser Notes Settings</h1>
         
         <div class="settings-section">
+            <h2>Editor Settings</h2>
             <div class="setting-item">
                 <div class="setting-label">
                     <label for="vimMode">Enable Vim Mode</label>
@@ -23,6 +24,116 @@
                         <input type="checkbox" id="vimMode">
                         <span class="slider"></span>
                     </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <h2>Dropbox Sync</h2>
+            <div class="setting-item">
+                <div class="setting-label">
+                    <label>Dropbox Integration</label>
+                    <p class="setting-description">
+                        Sync your notes to a Dropbox file for backup and cross-device access
+                    </p>
+                </div>
+                <div class="setting-control">
+                    <div id="dropboxAuth" class="dropbox-auth">
+                        <button id="connectDropbox" class="btn btn-primary">Connect to Dropbox</button>
+                        <div id="dropboxStatus" class="status-message"></div>
+                    </div>
+                    <div id="dropboxConnected" class="dropbox-connected" style="display: none;">
+                        <div class="connected-status">
+                            <span class="status-icon">✓</span>
+                            <span>Connected to Dropbox</span>
+                        </div>
+                        <button id="disconnectDropbox" class="btn btn-secondary">Disconnect</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="dropboxFileSection" class="setting-item" style="display: none;">
+                <div class="setting-label">
+                    <label>Sync File</label>
+                    <p class="setting-description">
+                        Choose or create a markdown file in your Dropbox to sync notes
+                    </p>
+                </div>
+                <div class="setting-control">
+                    <div class="path-navigator">
+                        <div class="breadcrumb">
+                            <span class="breadcrumb-item clickable" data-path="">📁 Dropbox</span>
+                            <span id="breadcrumbPath"></span>
+                        </div>
+                        <button id="refreshFiles" class="btn btn-icon" title="Refresh files">↻</button>
+                    </div>
+                    
+                    <div class="folder-browser">
+                        <div id="folderList" class="folder-list"></div>
+                    </div>
+                    
+                    <div class="file-selector">
+                        <label for="dropboxFiles">Markdown files in current folder:</label>
+                        <select id="dropboxFiles" class="file-select">
+                            <option value="">Select a file...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="file-actions">
+                        <div class="path-input-group">
+                            <label for="newFilePath">Path for new file:</label>
+                            <input type="text" id="newFilePath" readonly class="path-display">
+                        </div>
+                        <div class="filename-input-group">
+                            <input type="text" id="newFileName" placeholder="New file name (e.g., notes.md)" class="file-input">
+                            <button id="createFile" class="btn btn-secondary">Create New Markdown File</button>
+                        </div>
+                    </div>
+                    
+                    <div id="currentFile" class="current-file" style="display: none;">
+                        <strong>Current file:</strong> <span id="currentFilePath"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="syncSettings" class="setting-item" style="display: none;">
+                <div class="setting-label">
+                    <label for="autoSync">Auto-sync</label>
+                    <p class="setting-description">
+                        Automatically sync changes to Dropbox
+                    </p>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle">
+                        <input type="checkbox" id="autoSync" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="syncFrequencySettings" class="setting-item" style="display: none;">
+                <div class="setting-label">
+                    <label for="syncFrequency">Sync Frequency</label>
+                    <p class="setting-description">
+                        How often to check for changes from external editors like Obsidian
+                    </p>
+                </div>
+                <div class="setting-control">
+                    <select id="syncFrequency" class="sync-frequency-select">
+                        <option value="5">Every 5 seconds (Fast)</option>
+                        <option value="10">Every 10 seconds</option>
+                        <option value="15">Every 15 seconds</option>
+                        <option value="30" selected>Every 30 seconds</option>
+                        <option value="60">Every minute</option>
+                        <option value="120">Every 2 minutes</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="syncStatus" class="sync-status" style="display: none;">
+                <div class="sync-info">
+                    <span>Last synced: <span id="lastSyncTime">Never</span></span>
+                    <button id="syncNow" class="btn btn-small">Sync Now</button>
                 </div>
             </div>
         </div>
@@ -83,6 +194,7 @@
         </div>
     </div>
     
-    <script src="settings.js"></script>
+    <script src="config.js"></script>
+    <script src="dist/settings.bundle.js"></script>
 </body>
 </html>
