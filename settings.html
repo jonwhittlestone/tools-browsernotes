@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Notes Settings</title>
+    <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+    <div class="settings-container">
+        <h1>Browser Notes Settings</h1>
+        
+        <div class="settings-section">
+            <div class="setting-item">
+                <div class="setting-label">
+                    <label for="vimMode">Enable Vim Mode</label>
+                    <p class="setting-description">
+                        Enables Vim-style keyboard navigation in the notes editor
+                    </p>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle">
+                        <input type="checkbox" id="vimMode">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="vim-help" id="vimHelp" style="display: none;">
+            <h2>Vim Mode Commands</h2>
+            <div class="commands-grid">
+                <div class="command-section">
+                    <h3>Normal Mode</h3>
+                    <ul>
+                        <li><kbd>i</kbd> - Enter insert mode</li>
+                        <li><kbd>a</kbd> - Append after cursor</li>
+                        <li><kbd>o</kbd> - Open new line below</li>
+                        <li><kbd>O</kbd> - Open new line above</li>
+                        <li><kbd>v</kbd> - Visual mode</li>
+                        <li><kbd>V</kbd> - Visual line mode</li>
+                    </ul>
+                </div>
+                <div class="command-section">
+                    <h3>Navigation</h3>
+                    <ul>
+                        <li><kbd>h</kbd> - Move left</li>
+                        <li><kbd>j</kbd> - Move down</li>
+                        <li><kbd>k</kbd> - Move up</li>
+                        <li><kbd>l</kbd> - Move right</li>
+                        <li><kbd>w</kbd> - Next word</li>
+                        <li><kbd>b</kbd> - Previous word</li>
+                        <li><kbd>0</kbd> - Start of line</li>
+                        <li><kbd>$</kbd> - End of line</li>
+                        <li><kbd>gg</kbd> - Go to top</li>
+                        <li><kbd>G</kbd> - Go to bottom</li>
+                    </ul>
+                </div>
+                <div class="command-section">
+                    <h3>Editing</h3>
+                    <ul>
+                        <li><kbd>x</kbd> - Delete character</li>
+                        <li><kbd>dd</kbd> - Delete line</li>
+                        <li><kbd>yy</kbd> - Yank (copy) line</li>
+                        <li><kbd>p</kbd> - Paste after</li>
+                        <li><kbd>P</kbd> - Paste before</li>
+                        <li><kbd>u</kbd> - Undo</li>
+                        <li><kbd>Ctrl+r</kbd> - Redo</li>
+                    </ul>
+                </div>
+                <div class="command-section">
+                    <h3>Insert Mode</h3>
+                    <ul>
+                        <li><kbd>Esc</kbd> - Return to normal mode</li>
+                        <li><kbd>Ctrl+[</kbd> - Return to normal mode</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p class="version">Version 1.0.0</p>
+        </div>
+    </div>
+    
+    <script src="settings.js"></script>
+</body>
+</html>

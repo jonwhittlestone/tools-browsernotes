@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Notes</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Notes</h1>
+            <div class="status-bar">
+                <span id="saveStatus"></span>
+                <span id="vimMode" class="vim-indicator"></span>
+            </div>
+        </div>
+        <div class="editor-container">
+            <textarea id="notepad" placeholder="Start typing your notes here..." spellcheck="false"></textarea>
+            <div id="vimCursor" class="vim-cursor" style="display: none;"></div>
+        </div>
+    </div>
+    <script src="vim-mode.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

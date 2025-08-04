@@ -1,0 +1,31 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="bg-gradient-128" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#5ed4ba;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#4ec9b0;stop-opacity:1" />
+            </linearGradient>
+            <filter id="shadow-128">
+                <feDropShadow dx="0" dy="2.56" stdDeviation="3.84" flood-opacity="0.3"/>
+            </filter>
+        </defs>
+        
+        <!-- Background -->
+        <rect width="128" height="128" rx="15.36" fill="url(#bg-gradient-128)" filter="url(#shadow-128)"/>
+        
+        <!-- Note lines -->
+        <g opacity="0.3">
+            <line x1="12.8" y1="44.8" x2="115.2" y2="44.8" 
+                  stroke="white" stroke-width="1.92"/>
+            <line x1="12.8" y1="64" x2="115.2" y2="64" 
+                  stroke="white" stroke-width="1.92"/>
+            <line x1="12.8" y1="83.2" x2="89.6" y2="83.2" 
+                  stroke="white" stroke-width="1.92"/>
+        </g>
+        
+        <!-- Letter N -->
+        <text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" 
+              fill="white" font-family="system-ui, -apple-system, sans-serif" 
+              font-size="44.8px" font-weight="600">
+            N
+        </text>
+    </svg>

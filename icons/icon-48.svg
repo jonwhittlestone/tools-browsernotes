@@ -1,0 +1,31 @@
+<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="bg-gradient-48" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#5ed4ba;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#4ec9b0;stop-opacity:1" />
+            </linearGradient>
+            <filter id="shadow-48">
+                <feDropShadow dx="0" dy="0.96" stdDeviation="1.44" flood-opacity="0.3"/>
+            </filter>
+        </defs>
+        
+        <!-- Background -->
+        <rect width="48" height="48" rx="5.76" fill="url(#bg-gradient-48)" filter="url(#shadow-48)"/>
+        
+        <!-- Note lines -->
+        <g opacity="0.3">
+            <line x1="4.800000000000001" y1="16.799999999999997" x2="43.2" y2="16.799999999999997" 
+                  stroke="white" stroke-width="0.72"/>
+            <line x1="4.800000000000001" y1="24" x2="43.2" y2="24" 
+                  stroke="white" stroke-width="0.72"/>
+            <line x1="4.800000000000001" y1="31.200000000000003" x2="33.599999999999994" y2="31.200000000000003" 
+                  stroke="white" stroke-width="0.72"/>
+        </g>
+        
+        <!-- Letter N -->
+        <text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" 
+              fill="white" font-family="system-ui, -apple-system, sans-serif" 
+              font-size="16.799999999999997px" font-weight="600">
+            N
+        </text>
+    </svg>
