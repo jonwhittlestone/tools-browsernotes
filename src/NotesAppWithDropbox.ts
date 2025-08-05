@@ -13,6 +13,7 @@ export class NotesAppWithDropbox {
     notepad: HTMLTextAreaElement;
     saveStatus: HTMLElement;
     vimModeIndicator: HTMLElement;
+    dateTemplateBtn: HTMLButtonElement;
     
     vimEnabled: boolean = false;
     vimMode: string = 'normal';
@@ -32,6 +33,7 @@ export class NotesAppWithDropbox {
         this.notepad = document.getElementById('notepad') as HTMLTextAreaElement;
         this.saveStatus = document.getElementById('saveStatus') as HTMLElement;
         this.vimModeIndicator = document.getElementById('vimMode') as HTMLElement;
+        this.dateTemplateBtn = document.getElementById('dateTemplateBtn') as HTMLButtonElement;
     }
     
     async init(): Promise<void> {
@@ -110,6 +112,10 @@ export class NotesAppWithDropbox {
     setupEventListeners(): void {
         this.notepad.addEventListener('input', () => {
             this.saveNotes();
+        });
+        
+        this.dateTemplateBtn.addEventListener('click', () => {
+            this.insertDateTemplate();
         });
         
         // Add manual sync shortcut (Ctrl+S or Cmd+S)
@@ -338,6 +344,35 @@ export class NotesAppWithDropbox {
             this.vim.disable();
             this.vim = null;
         }
+    }
+    
+    insertDateTemplate(): void {
+        const date = new Date();
+        
+        // Get week number
+        const startDate = new Date(date.getFullYear(), 0, 1);
+        const days = Math.floor((date.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
+        const weekNumber = Math.ceil((days + startDate.getDay() + 1) / 7);
+        
+        // Format date components
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
+        
+        // Create template with horizontal line
+        const template = `## ${year}-${month}-${day}-W${weekNumber}-${weekday}\n\n- todo.\n\n---\n\n`;
+        
+        const currentContent = this.notepad.value;
+        this.notepad.value = template + currentContent;
+        
+        // Move cursor after "- todo."
+        const cursorPosition = template.indexOf('- todo.') + 7;
+        this.notepad.setSelectionRange(cursorPosition, cursorPosition);
+        this.notepad.focus();
+        
+        // Trigger save
+        this.saveNotes();
     }
 }
 

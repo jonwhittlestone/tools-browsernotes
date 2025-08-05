@@ -93,3 +93,4 @@ temp/
 # Jest
 .jest/
 node_moduleskey.pem
+key.pem

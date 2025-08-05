@@ -42,6 +42,27 @@ h1 {
     align-items: center;
 }
 
+.template-btn {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    background: #2d2d2d;
+    border: 1px solid #3e3e3e;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.template-btn:hover {
+    background: #3e3e3e;
+    border-color: #4e4e4e;
+}
+
+.template-btn:active {
+    background: #252525;
+}
+
 #saveStatus {
     font-size: 12px;
     color: #888;
