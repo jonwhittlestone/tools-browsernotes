@@ -1,273 +1,104 @@
-# Browser Notes - Chrome Extension
+# Browser Notes
 
-A simple, lightweight note-taking Chrome extension that replaces your new tab page with a persistent notepad. Features include automatic saving to local storage and optional Vim mode for keyboard navigation.
+A powerful note-taking Chrome extension that replaces your new tab page with a persistent notepad. Features automatic saving, Dropbox sync, Vim mode, and a clean dark interface.
 
-## Screenshots
+## ✨ Features
 
-### Main Interface
-![Browser Notes Main Interface](screenshots/main-interface.png)
-*Clean, dark-themed note-taking interface that replaces your new tab page*
+- **📝 Instant Access** - Replace new tab with your notes
+- **💾 Auto-Save** - Notes saved automatically as you type
+- **☁️ Dropbox Sync** - Optional sync across devices
+- **🌙 Dark Theme** - Easy on the eyes
+- **⌨️ Vim Mode** - For keyboard enthusiasts
+- **📅 Date Templates** - Quick journaling entries
+- **🔒 Privacy First** - All data stored locally
 
-### Vim Mode
-![Vim Mode with Block Cursor](screenshots/vim-mode.png)
-*Vim mode enabled with visible block cursor and mode indicator*
-
-### Settings Page
-![Extension Settings](screenshots/settings-page.png)
-*Settings page with Vim mode toggle and command reference*
-
-> **Note**: Screenshots show the extension in action. To add your own screenshots, create a `screenshots/` directory and capture images of the running extension.
-
-## Features
-
-- **New Tab Override**: Replaces Chrome's new tab page with a note-taking interface
-- **Persistent Storage**: Notes are automatically saved to local storage
-- **Vim Mode**: Optional Vim-style keyboard navigation and editing
-- **Dark Theme**: Easy on the eyes with a modern dark interface
-- **Auto-Save**: Notes are saved automatically as you type
-- **Settings Page**: Configure Vim mode through the extension settings
-
-## Requirements
-
-- Node.js (latest LTS version recommended)
-- npm or yarn
-- Chrome or Chromium-based browser
-
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
-# Clone the repository
-git clone <repository-url>
+# Clone and setup
+git clone https://github.com/yourusername/browser-notes.git
 cd browser-notes
-
-# Initial setup (installs dependencies, builds project, generates icons)
-make setup
-
-# Or manual setup:
 npm install
-npm run build:icons
 npm run build
+
+# Load in Chrome
+1. Open chrome://extensions/
+2. Enable "Developer mode"
+3. Click "Load unpacked"
+4. Select this directory
 ```
 
-## Installation
+## 📚 Documentation
 
-### From Source
+Visit our comprehensive documentation in the [docs/](docs/) directory:
 
-1. **Build the extension:**
-   ```bash
-   make setup
-   # or manually:
-   npm install && npm run build:icons && npm run build
-   ```
+- **[Quick Start Guide](docs/README_DROPBOX.md)** - Get up and running
+- **[Dropbox Setup](docs/DROPBOX_SETUP_GUIDE.md)** - Enable sync
+- **[Publishing Guide](docs/CHROME_STORE_PUBLISHING_GUIDE.md)** - Deploy to Chrome Web Store
+- **[All Documentation →](docs/index.md)**
 
-2. **Load in Chrome:**
-   - Open Chrome and navigate to `chrome://extensions/`
-   - Enable "Developer mode" in the top right corner
-   - Click "Load unpacked" button
-   - Select this directory
-   - The extension will be installed and active
+## 🛠️ Development
 
-### Setting as Home Page
+### Prerequisites
 
-To use Browser Notes as your home page:
+- Node.js (v16 or higher)
+- npm or yarn
+- Chrome browser
 
-1. Open Chrome Settings (`chrome://settings/`)
-2. In the "On startup" section, select "Open a specific page or set of pages"
-3. Click "Add a new page"
-4. Enter `chrome://newtab` as the URL
-5. Click "Add"
-
-Now clicking the home button will open your notes.
-
-## Usage
-
-### Basic Usage
-
-1. Open a new tab or click the home button (if configured)
-2. Start typing your notes in the text area
-3. Notes are automatically saved as you type
-4. The "Saved" indicator will appear briefly after each save
-
-### Accessing Settings
-
-Right-click on the Browser Notes icon in the toolbar and select "Browser Notes Settings" to configure options.
-
-### Vim Mode
-
-Enable Vim mode in the settings to use keyboard-based navigation and editing.
-
-#### Vim Commands
-
-**Normal Mode Commands:**
-- `i` - Enter insert mode at cursor
-- `a` - Enter insert mode after cursor
-- `o` - Open new line below and enter insert mode
-- `O` - Open new line above and enter insert mode
-- `v` - Enter visual mode
-- `V` - Enter visual line mode
-
-**Navigation:**
-- `h` or `←` - Move left
-- `j` or `↓` - Move down
-- `k` or `↑` - Move up
-- `l` or `→` - Move right
-- `w` - Jump to next word
-- `b` - Jump to previous word
-- `0` - Jump to start of line
-- `$` - Jump to end of line
-- `gg` - Jump to beginning of document
-- `G` - Jump to end of document
-
-**Editing:**
-- `x` - Delete character under cursor
-- `dd` - Delete current line
-- `yy` - Copy (yank) current line
-- `p` - Paste after cursor
-- `P` - Paste before cursor
-- `u` - Undo
-- `Ctrl+r` - Redo
-
-**Insert Mode:**
-- `Esc` or `Ctrl+[` - Return to normal mode
-
-**Visual Mode:**
-- `y` - Copy (yank) selection
-- `d` or `x` - Delete selection
-- `Esc` - Return to normal mode
-
-## Development
-
-### Build System
-
-This project uses a Makefile for consistent builds across different environments:
+### Build Commands
 
 ```bash
-# Show available commands
-make help
-
-# Initial setup (recommended for first time)
-make setup
-
-# Individual commands
-make install      # Install dependencies
-make build        # Build TypeScript files  
-make icons        # Generate extension icons
-make test         # Run unit tests
-make dev          # Development build (icons + build)
-make package      # Create distribution package
-make clean        # Clean build artifacts
+npm run build        # Build the extension
+npm run test         # Run tests
+npm run lint         # Lint code
+npm run package      # Create distribution zip
 ```
 
 ### Project Structure
 
 ```
 browser-notes/
-├── Makefile               # Build system
-├── .nvmrc                 # Node.js version
-├── manifest.json          # Extension manifest
-├── index.html            # New tab page
-├── app.js               # Main application logic
-├── vim-mode.js          # Vim mode implementation
-├── styles.css           # Main styles
-├── background.js        # Background service worker
+├── src/                  # TypeScript source files
+├── dist/                 # Built JavaScript files
+├── docs/                 # Documentation
+├── icons/                # Extension icons
+├── manifest.json         # Extension manifest
+├── index.html           # Main notes interface
 ├── settings.html        # Settings page
-├── settings.js          # Settings page logic
-├── settings.css         # Settings page styles
-├── icons/               # Extension icons (generated)
-├── screenshots/         # UI screenshots for documentation
-├── scripts/             # Build scripts
-│   └── generate-icons.js
-├── src/                 # TypeScript source files
-│   ├── NotesApp.ts
-│   ├── VimMode.ts
-│   └── __tests__/       # Unit tests
-└── README.md
+└── webpack.config.js    # Build configuration
 ```
 
-### Development Workflow
+## ⌨️ Keyboard Shortcuts
 
-**First time setup:**
-```bash
-make setup
-```
+### Standard Mode
+- `Ctrl/Cmd + S` - Manual sync (when Dropbox enabled)
 
-**Daily development:**
-```bash
-# Make changes to source files
-make dev          # Rebuild icons and TypeScript
-make test         # Run tests
+### Vim Mode (when enabled)
+- `i` - Insert mode
+- `Esc` - Normal mode
+- `dd` - Delete line
+- `yy` - Copy line
+- [Full Vim commands →](docs/index.md)
 
-# Test in Chrome by reloading the extension
-```
+## 🤝 Contributing
 
-**Before committing:**
-```bash
-make test         # Ensure tests pass
-make package      # Verify packaging works
-```
+We welcome contributions! Please:
 
-**Distribution:**
-```bash
-make package      # Creates dist/browser-notes-extension.zip
-```
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-### TypeScript Support
+## 📄 License
 
-The extension includes TypeScript support for better development experience:
+MIT License - see [LICENSE](LICENSE) file
 
-```bash
-# Build TypeScript files
-make build
-# or: npm run build
+## 🔗 Links
 
-# Run tests  
-make test
-# or: npm test
+- [Documentation](docs/index.md)
+- [Report Issues](https://github.com/yourusername/browser-notes/issues)
+- [Chrome Web Store](#) (coming soon)
 
-# Run tests in watch mode
-npm run test:watch
+---
 
-# Generate test coverage report
-npm run test:coverage
-
-# Generate icons
-make icons
-# or: npm run build:icons
-```
-
-### Running Tests
-
-The project includes comprehensive unit tests for the main functionality:
-
-1. Install dependencies: `npm install`
-2. Run tests: `npm test`
-3. Run tests with coverage: `npm run test:coverage`
-4. Run tests in watch mode: `npm run test:watch`
-
-Test files are located in `src/__tests__/` and cover:
-- Note persistence and auto-save functionality
-- Vim mode operations and keyboard handling
-- Settings synchronization
-- Storage operations
-
-## Browser Compatibility
-
-This extension is designed for Chrome and Chromium-based browsers (Edge, Brave, etc.) that support Manifest V3.
-
-## Privacy
-
-Browser Notes stores all data locally on your device. No data is sent to external servers. The extension requires minimal permissions:
-- `storage` - To save notes and settings
-- `contextMenus` - To add the settings option to the extension icon context menu
-
-## License
-
-MIT License - Feel free to modify and distribute as needed.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit issues or pull requests.
-
-## Support
-
-If you encounter any issues or have feature requests, please create an issue on the project repository.
+Made with ❤️ for note-takers everywhere

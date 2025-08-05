@@ -1,3 +1,7 @@
+[Home](index.md) | [Quick Start](README_DROPBOX.md) | [Extension ID](EXTENSION_ID_GUIDE.md) | [Dropbox Setup](DROPBOX_SETUP_GUIDE.md) | [Page Setup](HOME_PAGE_SETUP.md) | [Publishing](PUBLISHING_GUIDE.md) | [Chrome Store](CHROME_STORE_PUBLISHING_GUIDE.md)
+
+---
+
 # Browser Notes - Dropbox Integration
 
 This Chrome extension allows **any user** to sync their notes to **their own Dropbox account** for backup and cross-device access.
