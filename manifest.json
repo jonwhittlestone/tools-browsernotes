@@ -3,6 +3,7 @@
   "name": "Browser Notes",
   "version": "1.0.0",
   "description": "A simple note-taking app as your browser start page",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsiC8FQDst1D8qQM/ZBpXcMgeVwgnUcX5PAR618w5y7kIVlr9PqJIYe6rJwNZrNNEGwYFiNYiDkp0kyDWEOtU+3FaJY/ayXdNkI+Gb892fBk60a9jjojmt1rbgNHHh2IBvgDNn65/lYDA4U6QeWtD+O9j29ojFUlhH/8lSHgBjN7vCxdhTPUu1olaQ4Iiz91jsFGOpc7LwDZs1VCpVMOsxgtWT8olWgP2E4sonlqswW0n/zGIEC8arWr1O6lrzM0FWERvvWTx7CJsG5ba7ROd86LAqSe7ieBgwzn5/KQrKGV8KwGiq0Jb5WikVQK7AyI1FxZHOffH4Mmp5Vhp3cgw+wIDAQAB",
   "permissions": [
     "storage",
     "contextMenus",
