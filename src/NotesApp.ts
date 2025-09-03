@@ -5,6 +5,7 @@ export class NotesApp {
     saveStatus: HTMLElement;
     vimModeIndicator: HTMLElement;
     dateTemplateBtn: HTMLButtonElement;
+    taskCount: HTMLElement;
     inboxCount: HTMLElement;
     pocketMoney: HTMLElement;
     
@@ -19,6 +20,7 @@ export class NotesApp {
         this.saveStatus = document.getElementById('saveStatus') as HTMLElement;
         this.vimModeIndicator = document.getElementById('vimMode') as HTMLElement;
         this.dateTemplateBtn = document.getElementById('dateTemplateBtn') as HTMLButtonElement;
+        this.taskCount = document.getElementById('taskCount') as HTMLElement;
         this.inboxCount = document.getElementById('inboxCount') as HTMLElement;
         this.pocketMoney = document.getElementById('pocketMoney') as HTMLElement;
     }
@@ -44,11 +46,13 @@ export class NotesApp {
         if (result.notes) {
             this.notepad.value = result.notes;
         }
+        this.updateTaskCount();
     }
     
     setupEventListeners(): void {
         this.notepad.addEventListener('input', () => {
             this.saveNotes();
+            this.updateTaskCount();
         });
         
         this.dateTemplateBtn.addEventListener('click', () => {
@@ -146,6 +150,13 @@ export class NotesApp {
         }
     }
     
+    updateTaskCount(): void {
+        const content = this.notepad.value;
+        const lines = content.split('\n');
+        const taskCount = lines.filter(line => line.trimStart().startsWith('-')).length;
+        this.taskCount.textContent = `Tasks: ${taskCount}`;
+    }
+
     async updateInboxCount(): Promise<void> {
         try {
             const response = await fetch('https://howapped.zapto.org/kaizen/inbox/count');
