@@ -14,10 +14,13 @@ export class NotesAppWithDropbox {
     saveStatus: HTMLElement;
     vimModeIndicator: HTMLElement;
     dateTemplateBtn: HTMLButtonElement;
+    inboxCount: HTMLElement;
+    pocketMoney: HTMLElement;
     
     vimEnabled: boolean = false;
     vimMode: string = 'normal';
     saveTimeout: number | null = null;
+    metricsInterval: number | null = null;
     vim: VimMode | null = null;
     
     dropboxService: DropboxService | null = null;
@@ -34,6 +37,8 @@ export class NotesAppWithDropbox {
         this.saveStatus = document.getElementById('saveStatus') as HTMLElement;
         this.vimModeIndicator = document.getElementById('vimMode') as HTMLElement;
         this.dateTemplateBtn = document.getElementById('dateTemplateBtn') as HTMLButtonElement;
+        this.inboxCount = document.getElementById('inboxCount') as HTMLElement;
+        this.pocketMoney = document.getElementById('pocketMoney') as HTMLElement;
     }
     
     async init(): Promise<void> {
@@ -41,6 +46,7 @@ export class NotesAppWithDropbox {
         await this.initDropbox();
         await this.loadNotes();
         this.setupEventListeners();
+        this.startMetricsPolling();
         
         if (this.vimEnabled) {
             this.initVimMode();
@@ -373,6 +379,62 @@ export class NotesAppWithDropbox {
         
         // Trigger save
         this.saveNotes();
+    }
+    
+    startMetricsPolling(): void {
+        console.log('Starting metrics polling...');
+        this.updateMetrics();
+        this.metricsInterval = window.setInterval(() => {
+            this.updateMetrics();
+        }, 60000); // Poll every minute
+    }
+    
+    async updateMetrics(): Promise<void> {
+        console.log('Updating metrics...');
+        try {
+            await Promise.all([
+                this.updateInboxCount(),
+                this.updatePocketMoney()
+            ]);
+        } catch (error) {
+            console.error('Error updating metrics:', error);
+        }
+    }
+    
+    async updateInboxCount(): Promise<void> {
+        try {
+            console.log('Fetching inbox count...');
+            const response = await fetch('https://howapped.zapto.org/kaizen/inbox/count');
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Inbox count response:', data);
+                this.inboxCount.textContent = `Inbox: ${data.INBOX}`;
+            } else {
+                console.error('Inbox count request failed:', response.status, response.statusText);
+                this.inboxCount.textContent = 'Inbox: Error';
+            }
+        } catch (error) {
+            this.inboxCount.textContent = 'Inbox: --';
+            console.error('Error fetching inbox count:', error);
+        }
+    }
+    
+    async updatePocketMoney(): Promise<void> {
+        try {
+            console.log('Fetching pocket money...');
+            const response = await fetch('https://howapped.zapto.org/kaizen/pocketmoney/joseph');
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Pocket money response:', data);
+                this.pocketMoney.textContent = `Joseph's Pocket Money: ${data.POCKETMONEY}`;
+            } else {
+                console.error('Pocket money request failed:', response.status, response.statusText);
+                this.pocketMoney.textContent = 'Joseph\'s Pocket Money: Error';
+            }
+        } catch (error) {
+            this.pocketMoney.textContent = 'Joseph\'s Pocket Money: --';
+            console.error('Error fetching pocket money:', error);
+        }
     }
 }
 

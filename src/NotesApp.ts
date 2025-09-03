@@ -5,10 +5,13 @@ export class NotesApp {
     saveStatus: HTMLElement;
     vimModeIndicator: HTMLElement;
     dateTemplateBtn: HTMLButtonElement;
+    inboxCount: HTMLElement;
+    pocketMoney: HTMLElement;
     
     vimEnabled: boolean = false;
     vimMode: string = 'normal';
     saveTimeout: number | null = null;
+    metricsInterval: number | null = null;
     vim: VimMode | null = null;
     
     constructor() {
@@ -16,12 +19,15 @@ export class NotesApp {
         this.saveStatus = document.getElementById('saveStatus') as HTMLElement;
         this.vimModeIndicator = document.getElementById('vimMode') as HTMLElement;
         this.dateTemplateBtn = document.getElementById('dateTemplateBtn') as HTMLButtonElement;
+        this.inboxCount = document.getElementById('inboxCount') as HTMLElement;
+        this.pocketMoney = document.getElementById('pocketMoney') as HTMLElement;
     }
     
     async init(): Promise<void> {
         await this.loadSettings();
         await this.loadNotes();
         this.setupEventListeners();
+        this.startMetricsPolling();
         
         if (this.vimEnabled) {
             this.initVimMode();
@@ -120,5 +126,53 @@ export class NotesApp {
         
         // Trigger save
         this.saveNotes();
+    }
+    
+    startMetricsPolling(): void {
+        this.updateMetrics();
+        this.metricsInterval = window.setInterval(() => {
+            this.updateMetrics();
+        }, 60000); // Poll every minute
+    }
+    
+    async updateMetrics(): Promise<void> {
+        try {
+            await Promise.all([
+                this.updateInboxCount(),
+                this.updatePocketMoney()
+            ]);
+        } catch (error) {
+            console.error('Error updating metrics:', error);
+        }
+    }
+    
+    async updateInboxCount(): Promise<void> {
+        try {
+            const response = await fetch('https://howapped.zapto.org/kaizen/inbox/count');
+            if (response.ok) {
+                const data = await response.json();
+                this.inboxCount.textContent = `Inbox: ${data.INBOX}`;
+            } else {
+                this.inboxCount.textContent = 'Inbox: Error';
+            }
+        } catch (error) {
+            this.inboxCount.textContent = 'Inbox: --';
+            console.error('Error fetching inbox count:', error);
+        }
+    }
+    
+    async updatePocketMoney(): Promise<void> {
+        try {
+            const response = await fetch('https://howapped.zapto.org/kaizen/pocketmoney/joseph');
+            if (response.ok) {
+                const data = await response.json();
+                this.pocketMoney.textContent = `Joseph's Pocket Money: ${data.POCKETMONEY}`;
+            } else {
+                this.pocketMoney.textContent = 'Joseph\'s Pocket Money: Error';
+            }
+        } catch (error) {
+            this.pocketMoney.textContent = 'Joseph\'s Pocket Money: --';
+            console.error('Error fetching pocket money:', error);
+        }
     }
 }
