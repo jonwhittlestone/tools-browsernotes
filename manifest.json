@@ -16,13 +16,14 @@
     "https://api.dropboxapi.com/*",
     "https://content.dropboxapi.com/*",
     "https://howapped.zapto.org/*",
-    "https://mail.google.com/*"
+    "https://mail.google.com/*",
+    "https://trustpilot-production.atlassian.net/*"
   ],
   "chrome_url_overrides": {
     "newtab": "index.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background-simple.js"
   },
   "action": {
     "default_icon": {

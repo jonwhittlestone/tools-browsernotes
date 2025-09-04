@@ -8,6 +8,7 @@ export class NotesApp {
     taskCount: HTMLElement;
     inboxCount: HTMLElement;
     workInboxCount: HTMLElement;
+    workJiraDoneCount: HTMLElement;
     pocketMoney: HTMLElement;
     
     vimEnabled: boolean = false;
@@ -24,6 +25,7 @@ export class NotesApp {
         this.taskCount = document.getElementById('taskCount') as HTMLElement;
         this.inboxCount = document.getElementById('inboxCount') as HTMLElement;
         this.workInboxCount = document.getElementById('workInboxCount') as HTMLElement;
+        this.workJiraDoneCount = document.getElementById('workJiraDoneCount') as HTMLElement;
         this.pocketMoney = document.getElementById('pocketMoney') as HTMLElement;
     }
     
@@ -135,10 +137,17 @@ export class NotesApp {
     }
     
     startMetricsPolling(): void {
+        console.log('Starting metrics polling...');
+        // Make work metrics visible initially with loading state
+        this.workInboxCount.style.display = 'inline';
+        this.workJiraDoneCount.style.display = 'inline';
+        this.workInboxCount.textContent = 'Loading...';
+        this.workJiraDoneCount.textContent = 'Loading...';
+        
         this.updateMetrics();
         this.metricsInterval = window.setInterval(() => {
             this.updateMetrics();
-        }, 60000); // Poll every minute
+        }, 300000); // Poll every 5 minutes
     }
     
     async updateMetrics(): Promise<void> {
@@ -146,6 +155,7 @@ export class NotesApp {
             await Promise.all([
                 this.updateInboxCount(),
                 this.updateWorkInboxCount(),
+                this.updateWorkJiraDoneCount(),
                 this.updatePocketMoney()
             ]);
         } catch (error) {
@@ -157,7 +167,7 @@ export class NotesApp {
         const content = this.notepad.value;
         const lines = content.split('\n');
         const taskCount = lines.filter(line => line.trimStart().startsWith('-')).length;
-        this.taskCount.textContent = `Tasks: ${taskCount}`;
+        this.taskCount.textContent = `${taskCount}`;
     }
 
     async updateInboxCount(): Promise<void> {
@@ -167,13 +177,13 @@ export class NotesApp {
             if (response.ok) {
                 const data = await response.json();
                 console.log('Personal inbox count response:', data);
-                this.inboxCount.textContent = `Inbox: ${data.INBOX}`;
+                this.inboxCount.textContent = `${data.INBOX}`;
             } else {
                 console.error('Personal inbox count request failed:', response.status, response.statusText);
-                this.inboxCount.textContent = 'Inbox: Error';
+                this.inboxCount.textContent = 'Error';
             }
         } catch (error) {
-            this.inboxCount.textContent = 'Inbox: --';
+            this.inboxCount.textContent = '--';
             console.error('Error fetching personal inbox count:', error);
         }
     }
@@ -199,7 +209,7 @@ export class NotesApp {
                     console.log('Work Gmail account not found, hiding metric');
                 } else {
                     this.workInboxCount.style.display = 'inline';
-                    this.workInboxCount.textContent = `Work Inbox: ${response.count}`;
+                    this.workInboxCount.textContent = `${response.count}`;
                     console.log('Work Gmail inbox count:', response.count);
                 }
             } else {
@@ -208,8 +218,37 @@ export class NotesApp {
             }
             
         } catch (error) {
-            this.workInboxCount.textContent = 'Work Inbox: --';
+            this.workInboxCount.textContent = '--';
             console.error('Error fetching work Gmail inbox count:', error);
+        }
+    }
+
+    async updateWorkJiraDoneCount(): Promise<void> {
+        try {
+            console.log('Fetching work Jira Done count using background tab...');
+            
+            // Send message to background script to get Jira Done count
+            const response = await chrome.runtime.sendMessage({
+                type: 'GET_JIRA_DONE_COUNT_FROM_BACKGROUND'
+            });
+
+            if (response && response.type === 'JIRA_DONE_COUNT_RESULT') {
+                if (response.error || !response.count) {
+                    this.workJiraDoneCount.style.display = 'none';
+                    console.error('Jira Done count error:', response.error);
+                } else {
+                    this.workJiraDoneCount.style.display = 'inline';
+                    this.workJiraDoneCount.textContent = `${response.count}`;
+                    console.log('Work Jira Done count:', response.count);
+                }
+            } else {
+                this.workJiraDoneCount.style.display = 'none';
+                console.error('Invalid response from background script for Jira');
+            }
+            
+        } catch (error) {
+            this.workJiraDoneCount.style.display = 'none';
+            console.error('Error fetching work Jira Done count:', error);
         }
     }
     
@@ -218,12 +257,12 @@ export class NotesApp {
             const response = await fetch('https://howapped.zapto.org/kaizen/pocketmoney/joseph');
             if (response.ok) {
                 const data = await response.json();
-                this.pocketMoney.textContent = `Joseph's Pocket Money: ${data.POCKETMONEY}`;
+                this.pocketMoney.textContent = `${data.POCKETMONEY}`;
             } else {
-                this.pocketMoney.textContent = 'Joseph\'s Pocket Money: Error';
+                this.pocketMoney.textContent = 'Error';
             }
         } catch (error) {
-            this.pocketMoney.textContent = 'Joseph\'s Pocket Money: --';
+            this.pocketMoney.textContent = '--';
             console.error('Error fetching pocket money:', error);
         }
     }
