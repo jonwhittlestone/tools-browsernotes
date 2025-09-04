@@ -7,12 +7,16 @@
   "permissions": [
     "storage",
     "contextMenus",
-    "identity"
+    "identity",
+    "tabs",
+    "activeTab",
+    "scripting"
   ],
   "host_permissions": [
     "https://api.dropboxapi.com/*",
     "https://content.dropboxapi.com/*",
-    "https://howapped.zapto.org/*"
+    "https://howapped.zapto.org/*",
+    "https://mail.google.com/*"
   ],
   "chrome_url_overrides": {
     "newtab": "index.html"

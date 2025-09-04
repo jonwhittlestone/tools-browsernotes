@@ -5,7 +5,8 @@ module.exports = {
   devtool: 'source-map', // Use source-map instead of eval
   entry: {
     settings: './src/SettingsUI.ts',
-    app: './src/NotesAppWithDropbox.ts'
+    app: './src/NotesAppWithDropbox.ts',
+    offscreen: './src/offscreen.ts'
   },
   module: {
     rules: [

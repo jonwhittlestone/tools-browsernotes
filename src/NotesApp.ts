@@ -7,6 +7,7 @@ export class NotesApp {
     dateTemplateBtn: HTMLButtonElement;
     taskCount: HTMLElement;
     inboxCount: HTMLElement;
+    workInboxCount: HTMLElement;
     pocketMoney: HTMLElement;
     
     vimEnabled: boolean = false;
@@ -22,6 +23,7 @@ export class NotesApp {
         this.dateTemplateBtn = document.getElementById('dateTemplateBtn') as HTMLButtonElement;
         this.taskCount = document.getElementById('taskCount') as HTMLElement;
         this.inboxCount = document.getElementById('inboxCount') as HTMLElement;
+        this.workInboxCount = document.getElementById('workInboxCount') as HTMLElement;
         this.pocketMoney = document.getElementById('pocketMoney') as HTMLElement;
     }
     
@@ -143,6 +145,7 @@ export class NotesApp {
         try {
             await Promise.all([
                 this.updateInboxCount(),
+                this.updateWorkInboxCount(),
                 this.updatePocketMoney()
             ]);
         } catch (error) {
@@ -159,16 +162,54 @@ export class NotesApp {
 
     async updateInboxCount(): Promise<void> {
         try {
+            console.log('Fetching personal inbox count...');
             const response = await fetch('https://howapped.zapto.org/kaizen/inbox/count');
             if (response.ok) {
                 const data = await response.json();
+                console.log('Personal inbox count response:', data);
                 this.inboxCount.textContent = `Inbox: ${data.INBOX}`;
             } else {
+                console.error('Personal inbox count request failed:', response.status, response.statusText);
                 this.inboxCount.textContent = 'Inbox: Error';
             }
         } catch (error) {
             this.inboxCount.textContent = 'Inbox: --';
-            console.error('Error fetching inbox count:', error);
+            console.error('Error fetching personal inbox count:', error);
+        }
+    }
+
+    async updateWorkInboxCount(): Promise<void> {
+        try {
+            console.log('Fetching work Gmail inbox count using offscreen document...');
+            
+            // Send message to background script to get Gmail count via offscreen document
+            const response = await chrome.runtime.sendMessage({
+                type: 'GET_GMAIL_COUNT_FROM_BACKGROUND'
+            });
+
+            if (response && response.type === 'GMAIL_COUNT_RESULT') {
+                if (response.error) {
+                    this.workInboxCount.style.display = 'none';
+                    console.error('Work Gmail count error:', response.error);
+                } else if (response.count === -1) {
+                    this.workInboxCount.style.display = 'none';
+                } else if (response.count === 0 && response.accountNotFound) {
+                    // Hide the metric if the correct Gmail account isn't found
+                    this.workInboxCount.style.display = 'none';
+                    console.log('Work Gmail account not found, hiding metric');
+                } else {
+                    this.workInboxCount.style.display = 'inline';
+                    this.workInboxCount.textContent = `Work Inbox: ${response.count}`;
+                    console.log('Work Gmail inbox count:', response.count);
+                }
+            } else {
+                this.workInboxCount.style.display = 'none';
+                console.error('Invalid response from background script');
+            }
+            
+        } catch (error) {
+            this.workInboxCount.textContent = 'Work Inbox: --';
+            console.error('Error fetching work Gmail inbox count:', error);
         }
     }
     
