@@ -11,6 +11,12 @@ describe('NotesApp', () => {
       <textarea id="notepad"></textarea>
       <span id="saveStatus"></span>
       <span id="vimMode"></span>
+      <button id="dateTemplateBtn"></button>
+      <span id="taskCount"></span>
+      <span id="inboxCount"></span>
+      <span id="workInboxCount"></span>
+      <span id="workJiraDoneCount"></span>
+      <span id="pocketMoney"></span>
     `;
     
     mockTextarea = document.getElementById('notepad') as HTMLTextAreaElement;
