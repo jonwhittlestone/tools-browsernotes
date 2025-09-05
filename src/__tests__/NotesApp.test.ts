@@ -161,5 +161,6 @@ describe('NotesApp', () => {
       
       expect(notesApp.vimEnabled).toBe(false);
     });
+
   });
 });
