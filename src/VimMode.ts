@@ -11,10 +11,16 @@ export class VimMode {
     cursor: HTMLElement | null = null;
     undoStack: { content: string; cursor: number }[] = [];
     redoStack: { content: string; cursor: number }[] = [];
+    onLineDeleted?: (deletedLine: string, fullContent: string, cursorPosition: number) => void;
     
-    constructor(textarea: HTMLTextAreaElement, indicator: HTMLElement) {
+    constructor(
+        textarea: HTMLTextAreaElement, 
+        indicator: HTMLElement, 
+        onLineDeleted?: (deletedLine: string, fullContent: string, cursorPosition: number) => void
+    ) {
         this.textarea = textarea;
         this.indicator = indicator;
+        this.onLineDeleted = onLineDeleted;
         this.cursor = document.getElementById('vimCursor');
         this.handleKeydown = this.handleKeydown.bind(this);
         this.updateCursor = this.updateCursor.bind(this);
@@ -491,6 +497,12 @@ export class VimMode {
         }
         
         this.yankedText = text.slice(lineStart, lineEnd);
+        
+        // Call the archive callback before deleting
+        if (this.onLineDeleted) {
+            this.onLineDeleted(this.yankedText, text, pos);
+        }
+        
         this.textarea.value = text.slice(0, lineStart) + text.slice(lineEnd);
         this.textarea.setSelectionRange(lineStart, lineStart);
         this.textarea.dispatchEvent(new Event('input', { bubbles: true }));
