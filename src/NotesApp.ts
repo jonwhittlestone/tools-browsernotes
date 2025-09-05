@@ -166,7 +166,10 @@ export class NotesApp {
     updateTaskCount(): void {
         const content = this.notepad.value;
         const lines = content.split('\n');
-        const taskCount = lines.filter(line => line.trimStart().startsWith('-')).length;
+        const taskCount = lines.filter(line => {
+            const trimmed = line.trimStart();
+            return trimmed.startsWith('-') && !trimmed.match(/^-{3,}$/);
+        }).length;
         this.taskCount.textContent = `${taskCount}`;
     }
 
