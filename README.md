@@ -8,8 +8,9 @@ A powerful note-taking Chrome extension that replaces your new tab page with a p
 - **💾 Auto-Save** - Notes saved automatically as you type
 - **☁️ Dropbox Sync** - Optional sync across devices
 - **🌙 Dark Theme** - Easy on the eyes
-- **⌨️ Vim Mode** - For keyboard enthusiasts
+- **⌨️ Vim Mode** - For keyboard enthusiasts with full undo/redo support
 - **📅 Date Templates** - Quick journaling entries
+- **📦 Task Archiving** - Automatically archive completed tasks
 - **🔒 Privacy First** - All data stored locally
 
 ## 🚀 Quick Start
@@ -49,10 +50,43 @@ Visit our comprehensive documentation in the [docs/](docs/) directory:
 
 ```bash
 npm run build        # Build the extension
-npm run test         # Run tests
+npm test             # Run tests (also: make test)
 npm run lint         # Lint code
 npm run package      # Create distribution zip
 ```
+
+### Make Commands
+
+```bash
+make install         # Install dependencies
+make build          # Build TypeScript files
+make test           # Run unit tests
+make clean          # Clean build artifacts
+make dev            # Development build (build + icons)
+make package        # Create extension package
+```
+
+### Testing & Quality Assurance
+
+This project includes comprehensive testing and code quality measures:
+
+**Running Tests:**
+```bash
+npm test             # Run all tests
+make test           # Alternative via Makefile
+```
+
+**Pre-commit Hooks:**
+- **Husky** automatically runs tests before each commit
+- **Commits are blocked** if any tests fail
+- Ensures main branch always has working code
+- No manual intervention needed - just commit normally
+
+**Test Coverage:**
+- ✅ **Core App Functionality** - Note saving, loading, UI interactions
+- ✅ **Vim Mode** - All vim commands including undo/redo system  
+- ✅ **Task Management** - Task counting, archiving functionality
+- ✅ **Retry Logic** - Network request resilience
 
 ### Project Structure
 
@@ -76,8 +110,11 @@ browser-notes/
 ### Vim Mode (when enabled)
 - `i` - Insert mode
 - `Esc` - Normal mode
-- `dd` - Delete line
+- `dd` - Delete line (archives tasks automatically)
+- `u` - Undo
+- `U` - Redo
 - `yy` - Copy line
+- `p/P` - Paste after/before cursor
 - [Full Vim commands →](docs/index.md)
 
 ## 🤝 Contributing
