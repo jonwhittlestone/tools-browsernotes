@@ -9,6 +9,8 @@ export class VimMode {
     visualStart: number | null = null;
     visualEnd: number | null = null;
     cursor: HTMLElement | null = null;
+    undoStack: { content: string; cursor: number }[] = [];
+    redoStack: { content: string; cursor: number }[] = [];
     
     constructor(textarea: HTMLTextAreaElement, indicator: HTMLElement) {
         this.textarea = textarea;
@@ -234,7 +236,12 @@ export class VimMode {
             
             case 'u':
                 e.preventDefault();
-                document.execCommand('undo');
+                this.undo();
+                break;
+            
+            case 'U':
+                e.preventDefault();
+                this.redo();
                 break;
             
             default:
@@ -431,6 +438,7 @@ export class VimMode {
     }
     
     insertNewLine(above: boolean): void {
+        this.saveState();
         const text = this.textarea.value;
         const pos = this.textarea.selectionStart;
         
@@ -455,6 +463,7 @@ export class VimMode {
         const pos = this.textarea.selectionStart;
         
         if (pos < text.length) {
+            this.saveState();
             this.textarea.value = text.slice(0, pos) + text.slice(pos + 1);
             this.textarea.setSelectionRange(pos, pos);
         this.updateCursor();
@@ -463,6 +472,7 @@ export class VimMode {
     }
     
     deleteLine(): void {
+        this.saveState();
         const text = this.textarea.value;
         const pos = this.textarea.selectionStart;
         
@@ -518,6 +528,7 @@ export class VimMode {
     
     deleteSelection(): void {
         if (this.textarea.selectionStart !== this.textarea.selectionEnd) {
+            this.saveState();
             const text = this.textarea.value;
             const start = this.textarea.selectionStart;
             const end = this.textarea.selectionEnd;
@@ -532,6 +543,7 @@ export class VimMode {
     paste(before: boolean): void {
         if (!this.yankedText) return;
         
+        this.saveState();
         const text = this.textarea.value;
         const pos = this.textarea.selectionStart;
         
@@ -615,5 +627,51 @@ export class VimMode {
                 }
             }, 0);
         }
+    }
+    
+    saveState(): void {
+        const state = {
+            content: this.textarea.value,
+            cursor: this.textarea.selectionStart
+        };
+        this.undoStack.push(state);
+        // Limit undo stack size to prevent memory issues
+        if (this.undoStack.length > 50) {
+            this.undoStack.shift();
+        }
+        // Clear redo stack when new action is performed
+        this.redoStack = [];
+    }
+    
+    undo(): void {
+        if (this.undoStack.length === 0) return;
+        
+        const currentState = {
+            content: this.textarea.value,
+            cursor: this.textarea.selectionStart
+        };
+        this.redoStack.push(currentState);
+        
+        const previousState = this.undoStack.pop()!;
+        this.textarea.value = previousState.content;
+        this.textarea.setSelectionRange(previousState.cursor, previousState.cursor);
+        this.updateCursor();
+        this.textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    
+    redo(): void {
+        if (this.redoStack.length === 0) return;
+        
+        const currentState = {
+            content: this.textarea.value,
+            cursor: this.textarea.selectionStart
+        };
+        this.undoStack.push(currentState);
+        
+        const nextState = this.redoStack.pop()!;
+        this.textarea.value = nextState.content;
+        this.textarea.setSelectionRange(nextState.cursor, nextState.cursor);
+        this.updateCursor();
+        this.textarea.dispatchEvent(new Event('input', { bubbles: true }));
     }
 }
