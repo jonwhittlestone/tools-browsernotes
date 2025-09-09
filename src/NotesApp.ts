@@ -9,9 +9,12 @@ export class NotesApp {
     inboxCount: HTMLElement;
     workInboxCount: HTMLElement;
     workJiraDoneCount: HTMLElement;
+    workInboxMetric: HTMLElement;
+    workJiraMetric: HTMLElement;
     pocketMoney: HTMLElement;
     
     vimEnabled: boolean = false;
+    workContextEnabled: boolean = true;
     vimMode: string = 'normal';
     saveTimeout: number | null = null;
     metricsInterval: number | null = null;
@@ -26,6 +29,8 @@ export class NotesApp {
         this.inboxCount = document.getElementById('inboxCount') as HTMLElement;
         this.workInboxCount = document.getElementById('workInboxCount') as HTMLElement;
         this.workJiraDoneCount = document.getElementById('workJiraDoneCount') as HTMLElement;
+        this.workInboxMetric = this.workInboxCount.parentElement as HTMLElement;
+        this.workJiraMetric = this.workJiraDoneCount.parentElement as HTMLElement;
         this.pocketMoney = document.getElementById('pocketMoney') as HTMLElement;
     }
     
@@ -41,8 +46,10 @@ export class NotesApp {
     }
     
     async loadSettings(): Promise<void> {
-        const result = await chrome.storage.sync.get(['vimEnabled']);
+        const result = await chrome.storage.sync.get(['vimEnabled', 'workContextEnabled']);
         this.vimEnabled = result.vimEnabled || false;
+        this.workContextEnabled = result.workContextEnabled !== false; // Default to true
+        console.log('Settings loaded - workContextEnabled:', this.workContextEnabled);
     }
     
     async loadNotes(): Promise<void> {
@@ -64,12 +71,18 @@ export class NotesApp {
         });
         
         chrome.storage.onChanged.addListener((changes, namespace) => {
-            if (namespace === 'sync' && changes.vimEnabled) {
-                this.vimEnabled = changes.vimEnabled.newValue;
-                if (this.vimEnabled) {
-                    this.initVimMode();
-                } else {
-                    this.disableVimMode();
+            if (namespace === 'sync') {
+                if (changes.vimEnabled) {
+                    this.vimEnabled = changes.vimEnabled.newValue;
+                    if (this.vimEnabled) {
+                        this.initVimMode();
+                    } else {
+                        this.disableVimMode();
+                    }
+                }
+                if (changes.workContextEnabled) {
+                    this.workContextEnabled = changes.workContextEnabled.newValue;
+                    this.updateWorkMetricsVisibility();
                 }
             }
         });
@@ -138,11 +151,7 @@ export class NotesApp {
     
     startMetricsPolling(): void {
         console.log('Starting metrics polling...');
-        // Make work metrics visible initially with loading state
-        this.workInboxCount.style.display = 'inline';
-        this.workJiraDoneCount.style.display = 'inline';
-        this.workInboxCount.textContent = 'Loading...';
-        this.workJiraDoneCount.textContent = 'Loading...';
+        this.updateWorkMetricsVisibility();
         
         this.updateMetrics();
         this.metricsInterval = window.setInterval(() => {
@@ -150,14 +159,39 @@ export class NotesApp {
         }, 300000); // Poll every 5 minutes
     }
     
+    updateWorkMetricsVisibility(): void {
+        console.log('updateWorkMetricsVisibility called, workContextEnabled:', this.workContextEnabled);
+        if (this.workContextEnabled) {
+            // Make work metrics visible with loading state
+            console.log('Showing work metrics');
+            this.workInboxMetric.style.display = 'inline';
+            this.workJiraMetric.style.display = 'inline';
+            this.workInboxCount.textContent = 'Loading...';
+            this.workJiraDoneCount.textContent = 'Loading...';
+        } else {
+            // Hide work metrics when work context is disabled
+            console.log('Hiding work metrics');
+            this.workInboxMetric.style.display = 'none';
+            this.workJiraMetric.style.display = 'none';
+        }
+    }
+    
     async updateMetrics(): Promise<void> {
         try {
-            await Promise.all([
+            const promises = [
                 this.updateInboxCount(),
-                this.updateWorkInboxCount(),
-                this.updateWorkJiraDoneCount(),
                 this.updatePocketMoney()
-            ]);
+            ];
+            
+            // Only add work-related metrics if work context is enabled
+            if (this.workContextEnabled) {
+                promises.push(
+                    this.updateWorkInboxCount(),
+                    this.updateWorkJiraDoneCount()
+                );
+            }
+            
+            await Promise.all(promises);
         } catch (error) {
             console.error('Error updating metrics:', error);
         }
@@ -192,6 +226,12 @@ export class NotesApp {
     }
 
     async updateWorkInboxCount(): Promise<void> {
+        console.log('updateWorkInboxCount called, workContextEnabled:', this.workContextEnabled);
+        if (!this.workContextEnabled) {
+            console.log('Work context disabled, skipping Gmail polling');
+            return;
+        }
+        
         try {
             console.log('Fetching work Gmail inbox count using offscreen document...');
             
@@ -227,6 +267,12 @@ export class NotesApp {
     }
 
     async updateWorkJiraDoneCount(): Promise<void> {
+        console.log('updateWorkJiraDoneCount called, workContextEnabled:', this.workContextEnabled);
+        if (!this.workContextEnabled) {
+            console.log('Work context disabled, skipping Jira polling');
+            return;
+        }
+        
         try {
             console.log('Fetching work Jira Done count using background tab...');
             

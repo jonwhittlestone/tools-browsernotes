@@ -18,9 +18,12 @@ export class NotesAppWithDropbox {
   inboxCount: HTMLElement;
   workInboxCount: HTMLElement;
   workJiraDoneCount: HTMLElement;
+  workInboxMetric: HTMLElement;
+  workJiraMetric: HTMLElement;
   pocketMoney: HTMLElement;
 
   vimEnabled: boolean = false;
+  workContextEnabled: boolean = true;
   vimMode: string = "normal";
   saveTimeout: number | null = null;
   metricsInterval: number | null = null;
@@ -50,6 +53,8 @@ export class NotesAppWithDropbox {
     this.workJiraDoneCount = document.getElementById(
       "workJiraDoneCount"
     ) as HTMLElement;
+    this.workInboxMetric = this.workInboxCount.parentElement as HTMLElement;
+    this.workJiraMetric = this.workJiraDoneCount.parentElement as HTMLElement;
     this.pocketMoney = document.getElementById("pocketMoney") as HTMLElement;
   }
 
@@ -82,12 +87,15 @@ export class NotesAppWithDropbox {
   async loadSettings(): Promise<void> {
     const result = await chrome.storage.sync.get([
       "vimEnabled",
+      "workContextEnabled",
       "autoSync",
       "syncFrequency",
     ]);
     this.vimEnabled = result.vimEnabled || false;
+    this.workContextEnabled = result.workContextEnabled !== false; // Default to true
     this.autoSync = result.autoSync !== false;
     this.syncFrequency = result.syncFrequency || 30;
+    console.log('Settings loaded - workContextEnabled:', this.workContextEnabled);
   }
 
   async initDropbox(): Promise<void> {
@@ -167,6 +175,10 @@ export class NotesAppWithDropbox {
           } else {
             this.disableVimMode();
           }
+        }
+        if (changes.workContextEnabled) {
+          this.workContextEnabled = changes.workContextEnabled.newValue;
+          this.updateWorkMetricsVisibility();
         }
         if (changes.autoSync) {
           this.autoSync = changes.autoSync.newValue;
@@ -421,12 +433,7 @@ export class NotesAppWithDropbox {
 
   startMetricsPolling(): void {
     console.log("Starting metrics polling...");
-    console.log("Setting up work metrics with loading state");
-    // Make work metrics visible initially with loading state
-    this.workInboxCount.style.display = "inline";
-    this.workJiraDoneCount.style.display = "inline";
-    this.workInboxCount.textContent = "Loading...";
-    this.workJiraDoneCount.textContent = "Loading...";
+    this.updateWorkMetricsVisibility();
 
     console.log("Calling updateMetrics() immediately...");
     this.updateMetrics();
@@ -437,21 +444,48 @@ export class NotesAppWithDropbox {
     }, 30000); // Poll every 30 seconds for testing
   }
 
+  updateWorkMetricsVisibility(): void {
+    console.log('updateWorkMetricsVisibility called, workContextEnabled:', this.workContextEnabled);
+    if (this.workContextEnabled) {
+      // Make work metrics visible with loading state
+      console.log('Showing work metrics');
+      this.workInboxMetric.style.display = "inline";
+      this.workJiraMetric.style.display = "inline";
+      this.workInboxCount.textContent = "Loading...";
+      this.workJiraDoneCount.textContent = "Loading...";
+    } else {
+      // Hide work metrics when work context is disabled
+      console.log('Hiding work metrics');
+      this.workInboxMetric.style.display = "none";
+      this.workJiraMetric.style.display = "none";
+    }
+  }
+
   async updateMetrics(): Promise<void> {
     console.log("Updating metrics...");
     try {
-      await Promise.all([
+      const promises = [
         this.updateInboxCount(),
-        this.updateWorkInboxCount(),
-        this.updateWorkJiraDoneCount(),
         this.updatePocketMoney(),
-      ]);
+      ];
+      
+      // Only add work-related metrics if work context is enabled
+      if (this.workContextEnabled) {
+        promises.push(
+          this.updateWorkInboxCount(),
+          this.updateWorkJiraDoneCount()
+        );
+      }
+      
+      await Promise.all(promises);
       console.log("All metrics updated successfully");
     } catch (error) {
       console.error("Error updating metrics:", error);
       // Show error state instead of staying on "Loading..."
-      this.workInboxCount.textContent = "Error";
-      this.workJiraDoneCount.textContent = "Error";
+      if (this.workContextEnabled) {
+        this.workInboxCount.textContent = "Error";
+        this.workJiraDoneCount.textContent = "Error";
+      }
     }
   }
 
@@ -490,6 +524,12 @@ export class NotesAppWithDropbox {
   }
 
   async updateWorkInboxCount(): Promise<void> {
+    console.log('updateWorkInboxCount called, workContextEnabled:', this.workContextEnabled);
+    if (!this.workContextEnabled) {
+      console.log('Work context disabled, skipping Gmail polling');
+      return;
+    }
+    
     try {
       console.log("STARTING: updateWorkInboxCount");
       console.log("Fetching work Gmail inbox count using background tab...");
@@ -535,6 +575,12 @@ export class NotesAppWithDropbox {
   }
 
   async updateWorkJiraDoneCount(): Promise<void> {
+    console.log('updateWorkJiraDoneCount called, workContextEnabled:', this.workContextEnabled);
+    if (!this.workContextEnabled) {
+      console.log('Work context disabled, skipping Jira polling');
+      return;
+    }
+    
     try {
       console.log("STARTING: updateWorkJiraDoneCount");
       console.log("Fetching work Jira Done count using background tab...");

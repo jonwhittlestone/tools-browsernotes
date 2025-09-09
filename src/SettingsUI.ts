@@ -42,9 +42,10 @@ export class SettingsUI {
     }
     
     async loadSettings(): Promise<void> {
-        const result = await chrome.storage.sync.get(['vimEnabled', 'autoSync', 'syncFrequency']);
+        const result = await chrome.storage.sync.get(['vimEnabled', 'workContextEnabled', 'autoSync', 'syncFrequency']);
         
         const vimModeCheckbox = document.getElementById('vimMode') as HTMLInputElement;
+        const workContextCheckbox = document.getElementById('workContext') as HTMLInputElement;
         const autoSyncCheckbox = document.getElementById('autoSync') as HTMLInputElement;
         const syncFrequencySelect = document.getElementById('syncFrequency') as HTMLSelectElement;
         const vimHelp = document.getElementById('vimHelp');
@@ -54,6 +55,10 @@ export class SettingsUI {
             if (vimHelp) {
                 vimHelp.style.display = vimModeCheckbox.checked ? 'block' : 'none';
             }
+        }
+        
+        if (workContextCheckbox) {
+            workContextCheckbox.checked = result.workContextEnabled !== false; // Default to true
         }
         
         if (autoSyncCheckbox) {
@@ -79,6 +84,7 @@ export class SettingsUI {
     
     setupEventListeners(): void {
         const vimModeCheckbox = document.getElementById('vimMode') as HTMLInputElement;
+        const workContextCheckbox = document.getElementById('workContext') as HTMLInputElement;
         const autoSyncCheckbox = document.getElementById('autoSync') as HTMLInputElement;
         const connectButton = document.getElementById('connectDropbox');
         const disconnectButton = document.getElementById('disconnectDropbox');
@@ -98,6 +104,13 @@ export class SettingsUI {
                 if (vimHelp) {
                     vimHelp.style.display = isChecked ? 'block' : 'none';
                 }
+            });
+        }
+        
+        if (workContextCheckbox) {
+            workContextCheckbox.addEventListener('change', async (e) => {
+                const isChecked = (e.target as HTMLInputElement).checked;
+                await chrome.storage.sync.set({ workContextEnabled: isChecked });
             });
         }
         
