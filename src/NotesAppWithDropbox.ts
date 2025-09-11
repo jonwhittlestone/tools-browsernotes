@@ -14,6 +14,7 @@ export class NotesAppWithDropbox {
   saveStatus: HTMLElement;
   vimModeIndicator: HTMLElement;
   dateTemplateBtn: HTMLButtonElement;
+  familyPlannerBtn: HTMLButtonElement;
   taskCount: HTMLElement;
   inboxCount: HTMLElement;
   workInboxCount: HTMLElement;
@@ -44,6 +45,9 @@ export class NotesAppWithDropbox {
     this.vimModeIndicator = document.getElementById("vimMode") as HTMLElement;
     this.dateTemplateBtn = document.getElementById(
       "dateTemplateBtn"
+    ) as HTMLButtonElement;
+    this.familyPlannerBtn = document.getElementById(
+      "familyPlannerBtn"
     ) as HTMLButtonElement;
     this.taskCount = document.getElementById("taskCount") as HTMLElement;
     this.inboxCount = document.getElementById("inboxCount") as HTMLElement;
@@ -152,6 +156,10 @@ export class NotesAppWithDropbox {
 
     this.dateTemplateBtn.addEventListener("click", () => {
       this.insertDateTemplate();
+    });
+    
+    this.familyPlannerBtn.addEventListener("click", () => {
+      this.emailFamilyPlanner();
     });
 
     // Add manual sync shortcut (Ctrl+S or Cmd+S)
@@ -429,6 +437,52 @@ export class NotesAppWithDropbox {
 
     // Trigger save
     this.saveNotes();
+  }
+
+  async emailFamilyPlanner(): Promise<void> {
+    const originalText = this.familyPlannerBtn.textContent;
+    
+    // Change button to spinner
+    this.familyPlannerBtn.textContent = '⏳ Sending...';
+    this.familyPlannerBtn.disabled = true;
+    
+    try {
+      const response = await fetch('https://howapped.zapto.org/calplan/send', {
+        method: 'POST',
+        headers: {
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Connection': 'keep-alive',
+          'Content-Length': '0',
+          'Origin': 'https://howapped.zapto.org/calplan',
+          'Referer': 'https://howapped.zapto.org/calplan',
+          'Sec-Fetch-Dest': 'empty',
+          'Sec-Fetch-Mode': 'cors',
+          'Sec-Fetch-Site': 'same-origin',
+          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+          'accept': 'application/json',
+          'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+          'sec-ch-ua-mobile': '?0',
+          'sec-ch-ua-platform': '"Linux"'
+        }
+      });
+      
+      if (response.ok) {
+        this.familyPlannerBtn.textContent = '✅ Sent!';
+        setTimeout(() => {
+          this.familyPlannerBtn.textContent = originalText;
+          this.familyPlannerBtn.disabled = false;
+        }, 2000);
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Failed to send family planner email:', error);
+      this.familyPlannerBtn.textContent = '❌ Failed';
+      setTimeout(() => {
+        this.familyPlannerBtn.textContent = originalText;
+        this.familyPlannerBtn.disabled = false;
+      }, 2000);
+    }
   }
 
   startMetricsPolling(): void {
