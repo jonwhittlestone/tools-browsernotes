@@ -33,6 +33,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function handleGmailCountRequest(sendResponse) {
     try {
         console.log('Background: Starting Gmail count request');
+        // Wait 4 seconds before creating tab to avoid overwhelming when extension opens as new tab
+        await new Promise(resolve => setTimeout(resolve, 4000));
         // Create a background tab to Gmail, extract count, then close it
         const tab = await chrome.tabs.create({
             url: 'https://mail.google.com/mail/u/0/#inbox',
@@ -187,6 +189,8 @@ async function handleGmailCountRequest(sendResponse) {
 
 async function handleJiraDoneCountRequest(sendResponse) {
     try {
+        // Wait 4 seconds before creating tab to avoid overwhelming when extension opens as new tab
+        await new Promise(resolve => setTimeout(resolve, 4000));
         // Create a background tab to Jira board, extract Done count, then close it
         const tab = await chrome.tabs.create({
             url: 'https://trustpilot-production.atlassian.net/jira/software/c/projects/CSSV/boards/82?assignee=712020%3A9409c59f-3436-489c-96d1-ebf40363ac94',
