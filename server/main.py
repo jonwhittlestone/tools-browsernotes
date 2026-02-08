@@ -7,8 +7,10 @@ from fastapi.staticfiles import StaticFiles
 
 from server.auth import is_authenticated, create_session_cookie, clear_session_cookie
 from server.config import AUTH_PASSWORD, PORT, DATA_DIR
+from server.dropbox_proxy import router as dropbox_router
 
 app = FastAPI()
+app.include_router(dropbox_router)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 WEB_DIR = PROJECT_ROOT / "web"
