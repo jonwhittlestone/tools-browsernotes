@@ -84,6 +84,25 @@ async def serve_static(request: Request, path: str):
     return JSONResponse({"error": "not found"}, status_code=404)
 
 
+# --- PWA ---
+
+
+@app.get("/manifest.webmanifest")
+async def manifest(request: Request):
+    redirect = _require_auth(request)
+    if redirect:
+        return redirect
+    manifest_file = WEB_DIR / "manifest.webmanifest"
+    content = _render_html(manifest_file.read_text())
+    return HTMLResponse(content=content, media_type="application/manifest+json")
+
+
+@app.get("/sw.js")
+async def service_worker(request: Request):
+    sw_file = WEB_DIR / "sw.js"
+    return FileResponse(sw_file, media_type="application/javascript")
+
+
 # --- Main page ---
 
 
@@ -113,6 +132,7 @@ def _guess_content_type(path: str) -> str:
         ".png": "image/png",
         ".ico": "image/x-icon",
         ".map": "application/json",
+        ".webmanifest": "application/manifest+json",
     }.get(ext, "application/octet-stream")
 
 

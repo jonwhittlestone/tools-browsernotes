@@ -2,9 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Browser Notes</title>
     <link rel="stylesheet" href="{{ROOT_PATH}}/static/styles.css" />
+    <link rel="manifest" href="{{ROOT_PATH}}/manifest.webmanifest" />
+    <meta name="theme-color" content="#1e1e1e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="{{ROOT_PATH}}/static/icon-192.png" />
   </head>
   <body>
     <div class="container">
@@ -68,5 +73,10 @@
     </div>
     <script>window.__BASE_PATH__ = '{{ROOT_PATH}}';</script>
     <script src="{{ROOT_PATH}}/static/web.bundle.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('{{ROOT_PATH}}/sw.js', { scope: '{{ROOT_PATH}}/' });
+      }
+    </script>
   </body>
 </html>

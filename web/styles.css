@@ -8,17 +8,18 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: #1e1e1e;
     color: #d4d4d4;
-    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
 }
 
 .container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 100dvh;
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
 }
 
 .header {
@@ -40,7 +41,7 @@ body {
     display: flex;
     gap: 20px;
     align-items: center;
-    font-size: 14px;
+    font-size: 18px;
 }
 
 .metric {
@@ -65,7 +66,7 @@ body {
 }
 
 h1 {
-    font-size: 24px;
+    font-size: 30px;
     font-weight: 300;
     color: #e0e0e0;
 }
@@ -77,7 +78,7 @@ h1 {
 }
 
 .template-btn {
-    font-size: 12px;
+    font-size: 15px;
     padding: 4px 12px;
     border-radius: 4px;
     background: #2d2d2d;
@@ -98,7 +99,7 @@ h1 {
 }
 
 #saveStatus {
-    font-size: 12px;
+    font-size: 15px;
     color: #888;
     transition: opacity 0.3s ease;
 }
@@ -108,7 +109,7 @@ h1 {
 }
 
 .vim-indicator {
-    font-size: 12px;
+    font-size: 15px;
     padding: 4px 8px;
     border-radius: 4px;
     background: #2d2d2d;
@@ -153,7 +154,7 @@ h1 {
     border: 1px solid #3e3e3e;
     border-radius: 8px;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 14px;
+    font-size: 18px;
     line-height: 1.6;
     resize: none;
     outline: none;
@@ -210,7 +211,7 @@ h1 {
 .task-view-container {
     flex: 1;
     overflow-y: auto;
-    padding-bottom: 80px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 .task-section {
@@ -218,7 +219,7 @@ h1 {
 }
 
 .task-section-header {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 600;
     color: #e0e0e0;
     padding: 8px 4px;
@@ -269,7 +270,7 @@ h1 {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 18px;
     color: #569cd6;
     transition: all 0.15s ease;
 }
@@ -281,7 +282,7 @@ h1 {
 
 .task-item-text {
     flex: 1;
-    font-size: 15px;
+    font-size: 19px;
     line-height: 1.4;
     color: #d4d4d4;
     cursor: text;
@@ -294,7 +295,7 @@ h1 {
     border: none;
     border-bottom: 1px solid #569cd6;
     color: #d4d4d4;
-    font-size: 15px;
+    font-size: 19px;
     font-family: inherit;
     line-height: 1.4;
     padding: 0;
@@ -303,7 +304,7 @@ h1 {
 
 .task-drag-handle {
     color: #666;
-    font-size: 18px;
+    font-size: 22px;
     cursor: grab;
     padding: 0 4px;
     touch-action: none;
@@ -312,7 +313,7 @@ h1 {
 .task-text-line {
     padding: 6px 8px;
     color: #999;
-    font-size: 13px;
+    font-size: 16px;
 }
 
 .task-fab {
@@ -325,7 +326,7 @@ h1 {
     background: #569cd6;
     color: #1e1e1e;
     border: none;
-    font-size: 28px;
+    font-size: 35px;
     font-weight: 300;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -346,7 +347,7 @@ h1 {
 }
 
 .view-toggle {
-    font-size: 12px;
+    font-size: 15px;
     padding: 4px 12px;
     border-radius: 4px;
     background: #2d2d2d;
@@ -415,7 +416,7 @@ h1 {
 }
 
 .settings-header h2 {
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 500;
     color: #e0e0e0;
 }
@@ -424,7 +425,7 @@ h1 {
     background: none;
     border: none;
     color: #888;
-    font-size: 24px;
+    font-size: 30px;
     cursor: pointer;
     padding: 4px 8px;
     line-height: 1;
@@ -445,7 +446,7 @@ h1 {
 }
 
 .settings-section h3 {
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 600;
     color: #4ec9b0;
     text-transform: uppercase;
@@ -461,7 +462,7 @@ h1 {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 14px;
+    font-size: 18px;
     color: #d4d4d4;
     cursor: pointer;
 }
@@ -473,7 +474,7 @@ h1 {
     border: 1px solid #3e3e3e;
     border-radius: 4px;
     color: #d4d4d4;
-    font-size: 14px;
+    font-size: 18px;
     font-family: inherit;
     margin-top: 4px;
 }
@@ -481,7 +482,7 @@ h1 {
 .settings-status {
     padding: 8px 12px;
     border-radius: 4px;
-    font-size: 13px;
+    font-size: 16px;
     margin-bottom: 8px;
 }
 
@@ -504,7 +505,7 @@ h1 {
     padding: 8px 16px;
     border-radius: 4px;
     border: none;
-    font-size: 13px;
+    font-size: 16px;
     font-family: inherit;
     cursor: pointer;
     transition: background 0.15s ease;
@@ -534,7 +535,7 @@ h1 {
     gap: 2px;
     align-items: center;
     padding: 8px 0;
-    font-size: 13px;
+    font-size: 16px;
 }
 
 .breadcrumb {
@@ -560,7 +561,7 @@ h1 {
     padding: 8px 12px;
     cursor: pointer;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 18px;
     color: #d4d4d4;
 }
 
@@ -570,7 +571,7 @@ h1 {
 
 .settings-error {
     color: #f44336;
-    font-size: 13px;
+    font-size: 16px;
     padding: 8px;
 }
 
@@ -594,14 +595,14 @@ h1 {
     .metrics-bar {
         gap: 8px;
         flex-wrap: wrap;
-        font-size: 12px;
+        font-size: 15px;
     }
 
     h1 {
-        font-size: 20px;
+        font-size: 25px;
     }
 
     #notepad {
-        font-size: 16px; /* Prevents iOS zoom on focus */
+        font-size: 18px; /* Prevents iOS zoom on focus */
     }
 }

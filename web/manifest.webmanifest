@@ -1,0 +1,28 @@
+{
+  "name": "Browser Notes",
+  "short_name": "Notes",
+  "description": "Quick notes and task management",
+  "start_url": "{{ROOT_PATH}}/",
+  "scope": "{{ROOT_PATH}}/",
+  "display": "standalone",
+  "background_color": "#1e1e1e",
+  "theme_color": "#1e1e1e",
+  "icons": [
+    {
+      "src": "{{ROOT_PATH}}/static/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "{{ROOT_PATH}}/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "{{ROOT_PATH}}/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
