@@ -1,0 +1,233 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #3e3e3e;
+}
+
+.header > div:first-child {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.metrics-bar {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-size: 14px;
+}
+
+.metric {
+    color: #d4d4d4;
+    padding: 4px 8px;
+    background: #2d2d2d;
+    border-radius: 4px;
+    border: 1px solid #3e3e3e;
+}
+
+h1 {
+    font-size: 24px;
+    font-weight: 300;
+    color: #e0e0e0;
+}
+
+.status-bar {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.template-btn {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    background: #2d2d2d;
+    border: 1px solid #3e3e3e;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.template-btn:hover {
+    background: #3e3e3e;
+    border-color: #4e4e4e;
+}
+
+.template-btn:active {
+    background: #252525;
+}
+
+#saveStatus {
+    font-size: 12px;
+    color: #888;
+    transition: opacity 0.3s ease;
+}
+
+#saveStatus.visible {
+    color: #4ec9b0;
+}
+
+.vim-indicator {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: #2d2d2d;
+    border: 1px solid #3e3e3e;
+    display: none;
+}
+
+.vim-indicator.active {
+    display: block;
+}
+
+.vim-indicator.normal-mode {
+    background: #4ec9b0;
+    color: #1e1e1e;
+    border-color: #4ec9b0;
+}
+
+.vim-indicator.insert-mode {
+    background: #569cd6;
+    color: #1e1e1e;
+    border-color: #569cd6;
+}
+
+.vim-indicator.visual-mode {
+    background: #c586c0;
+    color: #1e1e1e;
+    border-color: #c586c0;
+}
+
+.editor-container {
+    position: relative;
+    flex: 1;
+    width: 100%;
+}
+
+#notepad {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    background: #2d2d2d;
+    color: #d4d4d4;
+    border: 1px solid #3e3e3e;
+    border-radius: 8px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: none;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+#notepad:focus {
+    border-color: #569cd6;
+}
+
+#notepad[readonly] {
+    caret-color: transparent;
+    border-color: #4ec9b0;
+}
+
+.vim-cursor {
+    position: absolute;
+    background-color: #4ec9b0;
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 10;
+    animation: vim-cursor-blink 1s infinite;
+    border-radius: 1px;
+}
+
+@keyframes vim-cursor-blink {
+    0%, 50% { opacity: 0.8; }
+    51%, 100% { opacity: 0.3; }
+}
+
+#notepad::placeholder {
+    color: #6e6e6e;
+}
+
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #2d2d2d;
+    border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4e4e4e;
+    border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #5e5e5e;
+}
+
+/* Task view styles */
+.task-view-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 80px;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+    }
+
+    .header > div:first-child {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .status-bar {
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .metrics-bar {
+        gap: 8px;
+        flex-wrap: wrap;
+        font-size: 12px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+
+    #notepad {
+        font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+}

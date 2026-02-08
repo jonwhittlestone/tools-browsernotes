@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Browser Notes</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div>
+          <h1>Notes</h1>
+          <div class="status-bar">
+            <button
+              id="dateTemplateBtn"
+              class="template-btn"
+              title="Insert date template"
+            >
+              New Date Entry
+            </button>
+            <button
+              id="familyPlannerBtn"
+              class="template-btn"
+              title="Email me the family planner"
+            >
+              Email Family Planner
+            </button>
+            <span id="saveStatus"></span>
+            <span id="vimMode" class="vim-indicator"></span>
+          </div>
+        </div>
+        <div class="metrics-bar">
+          <span class="metric">Tasks: <span id="taskCount">--</span></span>
+          <span class="metric"
+            >Personal Inbox: <span id="inboxCount">--</span></span
+          >
+          <span class="metric"
+            >Pocket Money: <span id="pocketMoney">--</span></span
+          >
+        </div>
+      </div>
+      <div id="textView" class="editor-container">
+        <textarea
+          id="notepad"
+          placeholder="Start typing your notes here..."
+          spellcheck="false"
+        ></textarea>
+        <div id="vimCursor" class="vim-cursor" style="display: none"></div>
+      </div>
+      <div id="taskView" class="task-view-container" style="display: none">
+        <!-- Task view will be rendered here by TaskView.ts -->
+      </div>
+    </div>
+    <script src="/static/web.bundle.js"></script>
+  </body>
+</html>
