@@ -51,17 +51,16 @@ describe('parseLine', () => {
     expect(result.text).toBe('');
   });
 
-  it('preserves indentation in raw', () => {
-    const result = parseLine('  - Indented task');
-    expect(result.type).toBe('task');
-    expect(result.text).toBe('Indented task');
-    expect(result.raw).toBe('  - Indented task');
+  it('treats indented list items as text (not tasks)', () => {
+    const result = parseLine('  - Indented item');
+    expect(result.type).toBe('text');
+    expect(result.raw).toBe('  - Indented item');
   });
 
-  it('parses indented completed task', () => {
+  it('treats indented completed items as text', () => {
     const result = parseLine('  - [x] Done');
-    expect(result.type).toBe('completed-task');
-    expect(result.text).toBe('Done');
+    expect(result.type).toBe('text');
+    expect(result.raw).toBe('  - [x] Done');
   });
 });
 

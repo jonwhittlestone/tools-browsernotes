@@ -71,14 +71,14 @@ export function parseLine(raw: string): ParsedLine {
     return { type: 'header', raw, text: trimmed.slice(3) };
   }
 
-  // Completed task: starts with - [x]
-  if (trimmed.startsWith('- [x] ')) {
-    return { type: 'completed-task', raw, text: trimmed.slice(6) };
+  // Completed task: starts with - [x] at column 0 (not indented)
+  if (raw.startsWith('- [x] ')) {
+    return { type: 'completed-task', raw, text: raw.slice(6) };
   }
 
-  // Task: starts with - (but not ---)
-  if (trimmed.startsWith('- ') && !trimmed.match(/^-{3,}$/)) {
-    return { type: 'task', raw, text: trimmed.slice(2) };
+  // Task: starts with - at column 0 (not indented, and not ---)
+  if (raw.startsWith('- ') && !trimmed.match(/^-{3,}$/)) {
+    return { type: 'task', raw, text: raw.slice(2) };
   }
 
   // Separator: ---

@@ -46,9 +46,32 @@ body {
 .metric {
     color: #d4d4d4;
     padding: 4px 8px;
-    background: #2d2d2d;
     border-radius: 4px;
-    border: 1px solid #3e3e3e;
+}
+
+.metric-tasks {
+    background: #1a3a2a;
+    border: 1px solid #2d5a3d;
+}
+
+.metric-work-inbox {
+    background: #2a1a3a;
+    border: 1px solid #4a2d5a;
+}
+
+.metric-work-jira {
+    background: #1a2a3a;
+    border: 1px solid #2d4a5a;
+}
+
+.metric-inbox {
+    background: #1a2a3a;
+    border: 1px solid #2d4a5a;
+}
+
+.metric-pocket {
+    background: #3a2a1a;
+    border: 1px solid #5a4a2d;
 }
 
 h1 {
