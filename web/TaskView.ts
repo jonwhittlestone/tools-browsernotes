@@ -8,6 +8,7 @@ import {
   createTaskLine,
   updateTaskText,
 } from './MarkdownParser';
+import { EmojiPicker } from './EmojiPicker';
 
 export interface TaskViewOptions {
   container: HTMLElement;
@@ -144,10 +145,23 @@ export class TaskView {
       this.toggleTask(sectionIndex, lineIndex);
     });
 
+    // Emoji button
+    const emojiBtn = document.createElement('button');
+    emojiBtn.className = 'task-emoji-btn';
+    const leadingEmoji = this.getLeadingEmoji(line.text);
+    emojiBtn.textContent = leadingEmoji || '😀';
+    if (!leadingEmoji) emojiBtn.classList.add('placeholder');
+    emojiBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.openEmojiPicker(sectionIndex, lineIndex, leadingEmoji);
+    });
+
     // Text
     const textEl = document.createElement('div');
     textEl.className = 'task-item-text';
-    textEl.textContent = line.text;
+    textEl.textContent = leadingEmoji
+      ? line.text.slice(leadingEmoji.length).trimStart()
+      : line.text;
     textEl.addEventListener('click', (e) => {
       e.stopPropagation();
       this.startEditing(textEl, sectionIndex, lineIndex);
@@ -160,6 +174,7 @@ export class TaskView {
     handle.setAttribute('data-drag-handle', 'true');
 
     el.appendChild(checkbox);
+    el.appendChild(emojiBtn);
     el.appendChild(textEl);
     el.appendChild(handle);
 
@@ -309,6 +324,40 @@ export class TaskView {
     section.lines.splice(actualNew, 0, moved);
 
     this.emitChange();
+  }
+
+  private getLeadingEmoji(text: string): string | null {
+    const match = text.match(
+      /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F[\u200D\uFE0F\p{Emoji}]*)/u,
+    );
+    return match ? match[0] : null;
+  }
+
+  private async openEmojiPicker(
+    sectionIndex: number,
+    lineIndex: number,
+    currentEmoji: string | null,
+  ): Promise<void> {
+    const result = await EmojiPicker.show(currentEmoji || undefined);
+    if (result === null) return;
+
+    const line = this.sections[sectionIndex]?.lines[lineIndex];
+    if (!line) return;
+
+    const existingEmoji = this.getLeadingEmoji(line.text);
+    let newText: string;
+    if (existingEmoji) {
+      newText = result + ' ' + line.text.slice(existingEmoji.length).trimStart();
+    } else {
+      newText = result + ' ' + line.text;
+    }
+
+    this.sections[sectionIndex].lines[lineIndex] = updateTaskText(
+      line,
+      newText,
+    );
+    this.emitChange();
+    this.render(serializeMarkdown(this.sections));
   }
 
   private emitChange(): void {

@@ -27,7 +27,7 @@ COPY server/ ./server/
 COPY --from=frontend-builder /app/dist/ ./dist/
 
 # Copy web static files (HTML, CSS)
-COPY web/index.html web/login.html web/styles.css ./web/
+COPY web/index.html web/login.html web/styles.css web/manifest.webmanifest web/sw.js web/icon.svg web/icon-192.png web/icon-512.png ./web/
 
 # Create data directory
 RUN mkdir -p /app/data

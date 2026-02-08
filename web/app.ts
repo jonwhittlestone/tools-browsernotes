@@ -88,9 +88,9 @@ export class WebNotesApp {
       this.startAutoSync();
     }
 
-    // Auto-switch to task view on mobile
-    if (window.innerWidth <= 768) {
-      this.switchView('task');
+    // Apply saved view preference (or mobile default)
+    if (this.currentView !== 'text') {
+      this.switchView(this.currentView);
     }
   }
 
@@ -99,6 +99,12 @@ export class WebNotesApp {
     this.autoSync = localStorage.getItem('autoSync') !== 'false';
     const freq = localStorage.getItem('syncFrequency');
     if (freq) this.syncFrequency = parseInt(freq);
+    const savedView = localStorage.getItem('viewMode') as 'text' | 'task' | null;
+    if (savedView) {
+      this.currentView = savedView;
+    } else if (window.innerWidth <= 768) {
+      this.currentView = 'task';
+    }
   }
 
   handleSettingsChange(settings: WebSettings): void {
@@ -148,6 +154,14 @@ export class WebNotesApp {
   }
 
   setupEventListeners(): void {
+    const burgerBtn = document.getElementById('burgerBtn');
+    const header = document.getElementById('header');
+    if (burgerBtn && header) {
+      burgerBtn.addEventListener('click', () => {
+        header.classList.toggle('menu-open');
+      });
+    }
+
     this.notepad.addEventListener('input', () => {
       this.saveNotes();
       this.updateTaskCount();
@@ -357,6 +371,7 @@ export class WebNotesApp {
 
   switchView(view: 'text' | 'task'): void {
     this.currentView = view;
+    localStorage.setItem('viewMode', view);
 
     if (view === 'task') {
       this.textViewEl.style.display = 'none';
