@@ -1,3 +1,4 @@
+import Sortable from 'sortablejs';
 import {
   ParsedSection,
   ParsedLine,
@@ -23,6 +24,7 @@ export class TaskView {
   private onContentChange: (markdown: string) => void;
   private sections: ParsedSection[] = [];
   private editingElement: HTMLElement | null = null;
+  private sortables: Sortable[] = [];
 
   constructor(options: TaskViewOptions) {
     this.container = options.container;
@@ -33,6 +35,12 @@ export class TaskView {
    * Render the task view from markdown content.
    */
   render(content: string): void {
+    // Destroy existing sortable instances
+    for (const s of this.sortables) {
+      s.destroy();
+    }
+    this.sortables = [];
+
     this.sections = parseMarkdown(content);
     this.container.innerHTML = '';
 
@@ -42,6 +50,9 @@ export class TaskView {
       this.container.appendChild(sectionEl);
     }
 
+    // Initialize SortableJS on each task list
+    this.initSortable();
+
     // Floating action button
     const fab = document.createElement('button');
     fab.className = 'task-fab';
@@ -49,6 +60,32 @@ export class TaskView {
     fab.title = 'Add task';
     fab.addEventListener('click', () => this.addTask());
     this.container.appendChild(fab);
+  }
+
+  private initSortable(): void {
+    const lists = this.container.querySelectorAll('.task-list');
+    lists.forEach((listEl) => {
+      const sectionIndex = parseInt(
+        (listEl as HTMLElement).dataset.sectionIndex || '0',
+      );
+      const sortable = Sortable.create(listEl as HTMLElement, {
+        handle: '.task-drag-handle',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        dragClass: 'sortable-drag',
+        filter: '.task-text-line',
+        onEnd: (evt) => {
+          if (
+            evt.oldIndex !== undefined &&
+            evt.newIndex !== undefined &&
+            evt.oldIndex !== evt.newIndex
+          ) {
+            this.handleReorder(sectionIndex, evt.oldIndex, evt.newIndex);
+          }
+        },
+      });
+      this.sortables.push(sortable);
+    });
   }
 
   private createSectionElement(
@@ -242,16 +279,9 @@ export class TaskView {
   }
 
   /**
-   * Get the task list containers for SortableJS integration.
-   */
-  getListElements(): HTMLElement[] {
-    return Array.from(this.container.querySelectorAll('.task-list'));
-  }
-
-  /**
    * Handle reorder after SortableJS drag. Updates internal data model.
    */
-  handleReorder(
+  private handleReorder(
     sectionIndex: number,
     oldIndex: number,
     newIndex: number,
