@@ -1,6 +1,7 @@
 import { VimMode } from '../src/VimMode';
 import { WebDropboxClient, DropboxStatus } from './WebDropboxClient';
 import { TaskView } from './TaskView';
+import { SettingsPanel, WebSettings } from './SettingsPanel';
 
 export class WebNotesApp {
   notepad: HTMLTextAreaElement;
@@ -11,6 +12,7 @@ export class WebNotesApp {
   viewToggleBtn: HTMLButtonElement;
   textViewEl: HTMLElement;
   taskViewEl: HTMLElement;
+  settingsBtn: HTMLButtonElement;
   taskCount: HTMLElement;
   inboxCount: HTMLElement;
   pocketMoney: HTMLElement;
@@ -20,6 +22,7 @@ export class WebNotesApp {
   metricsInterval: number | null = null;
   vim: VimMode | null = null;
   taskView: TaskView;
+  settingsPanel: SettingsPanel;
   currentView: 'text' | 'task' = 'text';
 
   dropbox: WebDropboxClient;
@@ -47,6 +50,9 @@ export class WebNotesApp {
     ) as HTMLButtonElement;
     this.textViewEl = document.getElementById('textView') as HTMLElement;
     this.taskViewEl = document.getElementById('taskView') as HTMLElement;
+    this.settingsBtn = document.getElementById(
+      'settingsBtn',
+    ) as HTMLButtonElement;
     this.taskCount = document.getElementById('taskCount') as HTMLElement;
     this.inboxCount = document.getElementById('inboxCount') as HTMLElement;
     this.pocketMoney = document.getElementById('pocketMoney') as HTMLElement;
@@ -59,6 +65,11 @@ export class WebNotesApp {
         this.saveNotes();
         this.updateTaskCount();
       },
+    });
+    this.settingsPanel = new SettingsPanel({
+      dropbox: this.dropbox,
+      onSettingsChange: (settings: WebSettings) =>
+        this.handleSettingsChange(settings),
     });
   }
 
@@ -85,6 +96,30 @@ export class WebNotesApp {
 
   loadLocalSettings(): void {
     this.vimEnabled = localStorage.getItem('vimEnabled') === 'true';
+    this.autoSync = localStorage.getItem('autoSync') !== 'false';
+    const freq = localStorage.getItem('syncFrequency');
+    if (freq) this.syncFrequency = parseInt(freq);
+  }
+
+  handleSettingsChange(settings: WebSettings): void {
+    // Vim mode
+    if (settings.vimEnabled && !this.vimEnabled) {
+      this.vimEnabled = true;
+      this.initVimMode();
+    } else if (!settings.vimEnabled && this.vimEnabled) {
+      this.vimEnabled = false;
+      this.disableVimMode();
+    }
+
+    // Sync settings
+    this.autoSync = settings.autoSync;
+    this.syncFrequency = settings.syncFrequency;
+
+    if (this.dropboxConnected && this.autoSync) {
+      this.startAutoSync();
+    } else {
+      this.stopAutoSync();
+    }
   }
 
   async initDropbox(): Promise<void> {
@@ -128,6 +163,10 @@ export class WebNotesApp {
 
     this.viewToggleBtn.addEventListener('click', () => {
       this.switchView(this.currentView === 'text' ? 'task' : 'text');
+    });
+
+    this.settingsBtn.addEventListener('click', () => {
+      this.settingsPanel.open();
     });
 
     this.notepad.addEventListener('keydown', (e) => {
