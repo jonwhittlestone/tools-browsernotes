@@ -25,19 +25,29 @@ export interface DropboxWriteResult {
   rev: string;
 }
 
+declare global {
+  interface Window {
+    __BASE_PATH__?: string;
+  }
+}
+
+function basePath(): string {
+  return window.__BASE_PATH__ || '';
+}
+
 /**
  * Thin client that calls the backend /api/dropbox/* endpoints.
  * All Dropbox tokens are managed server-side.
  */
 export class WebDropboxClient {
   async getStatus(): Promise<DropboxStatus> {
-    const resp = await fetch('/api/dropbox/status');
+    const resp = await fetch(`${basePath()}/api/dropbox/status`);
     if (!resp.ok) throw new Error(`Status failed: ${resp.status}`);
     return resp.json();
   }
 
   async listEntries(path: string = ''): Promise<DropboxEntry[]> {
-    const resp = await fetch('/api/dropbox/files', {
+    const resp = await fetch(`${basePath()}/api/dropbox/files`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path }),
@@ -48,7 +58,7 @@ export class WebDropboxClient {
   }
 
   async readFile(path: string): Promise<DropboxFileResult> {
-    const resp = await fetch('/api/dropbox/read', {
+    const resp = await fetch(`${basePath()}/api/dropbox/read`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path }),
@@ -62,7 +72,7 @@ export class WebDropboxClient {
     content: string,
     rev?: string,
   ): Promise<DropboxWriteResult> {
-    const resp = await fetch('/api/dropbox/write', {
+    const resp = await fetch(`${basePath()}/api/dropbox/write`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path, content, rev }),
@@ -77,7 +87,7 @@ export class WebDropboxClient {
   async getMetadata(
     path: string,
   ): Promise<{ id: string; name: string; path: string; rev: string } | null> {
-    const resp = await fetch('/api/dropbox/metadata', {
+    const resp = await fetch(`${basePath()}/api/dropbox/metadata`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path }),
@@ -91,7 +101,7 @@ export class WebDropboxClient {
     autoSync?: boolean;
     syncFrequency?: number;
   }): Promise<void> {
-    await fetch('/api/dropbox/config', {
+    await fetch(`${basePath()}/api/dropbox/config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config),
@@ -99,10 +109,10 @@ export class WebDropboxClient {
   }
 
   async disconnect(): Promise<void> {
-    await fetch('/api/dropbox/disconnect', { method: 'POST' });
+    await fetch(`${basePath()}/api/dropbox/disconnect`, { method: 'POST' });
   }
 
   initiateAuth(): void {
-    window.location.href = '/api/dropbox/auth';
+    window.location.href = `${basePath()}/api/dropbox/auth`;
   }
 }

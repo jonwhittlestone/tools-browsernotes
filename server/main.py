@@ -6,10 +6,10 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, File
 from fastapi.staticfiles import StaticFiles
 
 from server.auth import is_authenticated, create_session_cookie, clear_session_cookie
-from server.config import AUTH_PASSWORD, PORT, DATA_DIR
+from server.config import AUTH_PASSWORD, PORT, DATA_DIR, ROOT_PATH
 from server.dropbox_proxy import router as dropbox_router
 
-app = FastAPI()
+app = FastAPI(root_path=ROOT_PATH)
 app.include_router(dropbox_router)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -17,9 +17,13 @@ WEB_DIR = PROJECT_ROOT / "web"
 DIST_DIR = PROJECT_ROOT / "dist"
 
 
+def _prefixed(path: str) -> str:
+    return f"{ROOT_PATH}{path}"
+
+
 def _require_auth(request: Request) -> RedirectResponse | None:
     if not is_authenticated(request):
-        return RedirectResponse(url="/login", status_code=302)
+        return RedirectResponse(url=_prefixed("/login"), status_code=302)
     return None
 
 
@@ -37,15 +41,15 @@ async def health():
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     if is_authenticated(request):
-        return RedirectResponse(url="/", status_code=302)
+        return RedirectResponse(url=_prefixed("/"), status_code=302)
     login_html = WEB_DIR / "login.html"
-    return HTMLResponse(content=login_html.read_text())
+    return HTMLResponse(content=_render_html(login_html.read_text()))
 
 
 @app.post("/login")
 async def login(password: str = Form(...)):
     if password == AUTH_PASSWORD:
-        response = RedirectResponse(url="/", status_code=302)
+        response = RedirectResponse(url=_prefixed("/"), status_code=302)
         create_session_cookie(response)
         return response
     login_html = WEB_DIR / "login.html"
@@ -53,12 +57,12 @@ async def login(password: str = Form(...)):
         "<!-- ERROR_PLACEHOLDER -->",
         '<p class="error">Incorrect password</p>',
     )
-    return HTMLResponse(content=content, status_code=401)
+    return HTMLResponse(content=_render_html(content), status_code=401)
 
 
 @app.post("/logout")
 async def logout():
-    response = RedirectResponse(url="/login", status_code=302)
+    response = RedirectResponse(url=_prefixed("/login"), status_code=302)
     clear_session_cookie(response)
     return response
 
@@ -91,7 +95,11 @@ async def index(request: Request):
     index_html = WEB_DIR / "index.html"
     if not index_html.exists():
         return HTMLResponse("<h1>Browser Notes</h1><p>Web frontend not built yet.</p>")
-    return HTMLResponse(content=index_html.read_text())
+    return HTMLResponse(content=_render_html(index_html.read_text()))
+
+
+def _render_html(content: str) -> str:
+    return content.replace("{{ROOT_PATH}}", ROOT_PATH)
 
 
 def _guess_content_type(path: str) -> str:

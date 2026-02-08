@@ -9,4 +9,5 @@ DROPBOX_REDIRECT_URI = os.environ.get(
 )
 PORT = int(os.environ.get("PORT", "3004"))
 DATA_DIR = os.environ.get("DATA_DIR", "./data")
+ROOT_PATH = os.environ.get("ROOT_PATH", "")
 COOKIE_MAX_AGE = 90 * 24 * 60 * 60  # 90 days in seconds

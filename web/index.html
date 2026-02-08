@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Browser Notes</title>
-    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="{{ROOT_PATH}}/static/styles.css" />
   </head>
   <body>
     <div class="container">
@@ -66,6 +66,7 @@
         <!-- Task view will be rendered here by TaskView.ts -->
       </div>
     </div>
-    <script src="/static/web.bundle.js"></script>
+    <script>window.__BASE_PATH__ = '{{ROOT_PATH}}';</script>
+    <script src="{{ROOT_PATH}}/static/web.bundle.js"></script>
   </body>
 </html>
