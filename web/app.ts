@@ -1,5 +1,6 @@
 import { VimMode } from '../src/VimMode';
 import { WebDropboxClient, DropboxStatus } from './WebDropboxClient';
+import { TaskView } from './TaskView';
 
 export class WebNotesApp {
   notepad: HTMLTextAreaElement;
@@ -7,6 +8,9 @@ export class WebNotesApp {
   vimModeIndicator: HTMLElement;
   dateTemplateBtn: HTMLButtonElement;
   familyPlannerBtn: HTMLButtonElement;
+  viewToggleBtn: HTMLButtonElement;
+  textViewEl: HTMLElement;
+  taskViewEl: HTMLElement;
   taskCount: HTMLElement;
   inboxCount: HTMLElement;
   pocketMoney: HTMLElement;
@@ -15,6 +19,8 @@ export class WebNotesApp {
   saveTimeout: number | null = null;
   metricsInterval: number | null = null;
   vim: VimMode | null = null;
+  taskView: TaskView;
+  currentView: 'text' | 'task' = 'text';
 
   dropbox: WebDropboxClient;
   dropboxConnected: boolean = false;
@@ -36,11 +42,24 @@ export class WebNotesApp {
     this.familyPlannerBtn = document.getElementById(
       'familyPlannerBtn',
     ) as HTMLButtonElement;
+    this.viewToggleBtn = document.getElementById(
+      'viewToggle',
+    ) as HTMLButtonElement;
+    this.textViewEl = document.getElementById('textView') as HTMLElement;
+    this.taskViewEl = document.getElementById('taskView') as HTMLElement;
     this.taskCount = document.getElementById('taskCount') as HTMLElement;
     this.inboxCount = document.getElementById('inboxCount') as HTMLElement;
     this.pocketMoney = document.getElementById('pocketMoney') as HTMLElement;
 
     this.dropbox = new WebDropboxClient();
+    this.taskView = new TaskView({
+      container: this.taskViewEl,
+      onContentChange: (markdown: string) => {
+        this.notepad.value = markdown;
+        this.saveNotes();
+        this.updateTaskCount();
+      },
+    });
   }
 
   async init(): Promise<void> {
@@ -56,6 +75,11 @@ export class WebNotesApp {
 
     if (this.dropboxConnected && this.autoSync) {
       this.startAutoSync();
+    }
+
+    // Auto-switch to task view on mobile
+    if (window.innerWidth <= 768) {
+      this.switchView('task');
     }
   }
 
@@ -100,6 +124,10 @@ export class WebNotesApp {
 
     this.familyPlannerBtn.addEventListener('click', () => {
       this.emailFamilyPlanner();
+    });
+
+    this.viewToggleBtn.addEventListener('click', () => {
+      this.switchView(this.currentView === 'text' ? 'task' : 'text');
     });
 
     this.notepad.addEventListener('keydown', (e) => {
@@ -285,6 +313,23 @@ export class WebNotesApp {
     if (this.vim) {
       this.vim.disable();
       this.vim = null;
+    }
+  }
+
+  switchView(view: 'text' | 'task'): void {
+    this.currentView = view;
+
+    if (view === 'task') {
+      this.textViewEl.style.display = 'none';
+      this.taskViewEl.style.display = 'block';
+      this.taskView.render(this.notepad.value);
+      this.viewToggleBtn.textContent = 'Text View';
+      this.viewToggleBtn.classList.add('active');
+    } else {
+      this.textViewEl.style.display = '';
+      this.taskViewEl.style.display = 'none';
+      this.viewToggleBtn.textContent = 'Task View';
+      this.viewToggleBtn.classList.remove('active');
     }
   }
 
