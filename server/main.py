@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from server.auth import is_authenticated, create_session_cookie, clear_session_cookie
@@ -76,10 +76,7 @@ async def serve_static(request: Request, path: str):
         file_path = base_dir / path
         if file_path.is_file():
             content_type = _guess_content_type(path)
-            return HTMLResponse(
-                content=file_path.read_text(),
-                media_type=content_type,
-            )
+            return FileResponse(file_path, media_type=content_type)
     return JSONResponse({"error": "not found"}, status_code=404)
 
 
@@ -107,6 +104,7 @@ def _guess_content_type(path: str) -> str:
         ".svg": "image/svg+xml",
         ".png": "image/png",
         ".ico": "image/x-icon",
+        ".map": "application/json",
     }.get(ext, "application/octet-stream")
 
 
