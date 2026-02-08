@@ -1,0 +1,33 @@
+http:
+  routers:
+    browsernotes:
+      rule: "Host(`howapped.zapto.org`) && PathPrefix(`/browsernotes`)"
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+      service: browsernotes-service
+
+    browsernotes-secure:
+      rule: "Host(`howapped.zapto.org`) && PathPrefix(`/browsernotes`)"
+      entryPoints:
+        - websecure
+      middlewares:
+        - browsernotes-strip
+        - rate-limit
+        - headers-security
+      service: browsernotes-service
+      tls:
+        certResolver: letsencrypt
+
+  middlewares:
+    browsernotes-strip:
+      stripPrefix:
+        prefixes:
+          - "/browsernotes"
+
+  services:
+    browsernotes-service:
+      loadBalancer:
+        servers:
+          - url: "http://browsernotes:3004"
