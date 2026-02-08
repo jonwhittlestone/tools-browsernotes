@@ -4,7 +4,6 @@
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "outDir": "./dist",
-    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -13,9 +12,9 @@
     "allowJs": false,
     "declaration": false,
     "sourceMap": true,
-    "types": ["chrome"],
-    "removeComments": false
+    "removeComments": false,
+    "types": ["chrome"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "web/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

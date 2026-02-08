@@ -1,6 +1,9 @@
 // Simplified background script for Gmail and Jira extraction
 console.log('Background script loading...');
 
+// Track active requests to allow cancellation
+const activeRequests = new Map();
+
 chrome.runtime.onInstalled.addListener(() => {
     console.log('Extension installed');
     chrome.contextMenus.create({
@@ -20,24 +23,67 @@ chrome.action.onClicked.addListener(() => {
     chrome.tabs.create({ url: 'chrome://newtab' });
 });
 
+// Listen for tab changes to cancel requests if main tab is closed/navigated
+chrome.tabs.onRemoved.addListener((tabId) => {
+    // Cancel any active requests when a tab is closed
+    for (const [requestId, controller] of activeRequests) {
+        controller.cancel();
+        activeRequests.delete(requestId);
+    }
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    // Cancel requests if navigating away from new tab page
+    if (changeInfo.url && !changeInfo.url.includes('chrome://newtab')) {
+        for (const [requestId, controller] of activeRequests) {
+            controller.cancel();
+            activeRequests.delete(requestId);
+        }
+    }
+});
+
 // Handle messages for Gmail and Jira count requests
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log('Message received:', message.type);
     console.log('Full message:', message);
-    
+
     if (message.type === 'GET_GMAIL_COUNT_FROM_BACKGROUND') {
-        handleGmailCountRequest(sendResponse);
+        const requestId = Date.now() + '_gmail';
+        handleGmailCountRequest(sendResponse, requestId);
         return true; // Keep message channel open for async response
     } else if (message.type === 'GET_JIRA_DONE_COUNT_FROM_BACKGROUND') {
-        handleJiraDoneCountRequest(sendResponse);
+        const requestId = Date.now() + '_jira';
+        handleJiraDoneCountRequest(sendResponse, requestId);
         return true; // Keep message channel open for async response
     }
 });
 
-async function handleGmailCountRequest(sendResponse) {
+async function handleGmailCountRequest(sendResponse, requestId) {
+    const controller = {
+        cancelled: false,
+        cancel: () => {
+            controller.cancelled = true;
+            console.log('Gmail request cancelled:', requestId);
+        }
+    };
+
+    activeRequests.set(requestId, controller);
+
     try {
         console.log('Background: Starting Gmail count request');
-        
+
+        // Wait 4 seconds before creating tab, but allow cancellation
+        await new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(resolve, 4000);
+            const checkCancellation = setInterval(() => {
+                if (controller.cancelled) {
+                    clearTimeout(timeoutId);
+                    clearInterval(checkCancellation);
+                    reject(new Error('Request cancelled'));
+                }
+            }, 100);
+        });
+
         // Create a background tab to Gmail
         const tab = await chrome.tabs.create({
             url: 'https://mail.google.com/mail/u/0/#inbox',
@@ -72,24 +118,52 @@ async function handleGmailCountRequest(sendResponse) {
         const count = results && results[0] && results[0].result !== undefined ? results[0].result : -1;
         console.log('Background: Sending Gmail response with count:', count);
         
-        sendResponse({ 
-            type: 'GMAIL_COUNT_RESULT', 
-            count: count 
+        sendResponse({
+            type: 'GMAIL_COUNT_RESULT',
+            count: count
         });
     } catch (error) {
         console.error('Error handling Gmail count request:', error);
-        sendResponse({ 
-            type: 'GMAIL_COUNT_RESULT', 
-            count: -1, 
-            error: error.message 
-        });
+        if (error.message === 'Request cancelled') {
+            console.log('Gmail request was cancelled');
+        } else {
+            sendResponse({
+                type: 'GMAIL_COUNT_RESULT',
+                count: -1,
+                error: error.message
+            });
+        }
+    } finally {
+        activeRequests.delete(requestId);
     }
 }
 
-async function handleJiraDoneCountRequest(sendResponse) {
+async function handleJiraDoneCountRequest(sendResponse, requestId) {
+    const controller = {
+        cancelled: false,
+        cancel: () => {
+            controller.cancelled = true;
+            console.log('Jira request cancelled:', requestId);
+        }
+    };
+
+    activeRequests.set(requestId, controller);
+
     try {
         console.log('Background: Starting Jira count request');
-        
+
+        // Wait 8 seconds before creating tab, but allow cancellation (staggered from Gmail)
+        await new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(resolve, 8000);
+            const checkCancellation = setInterval(() => {
+                if (controller.cancelled) {
+                    clearTimeout(timeoutId);
+                    clearInterval(checkCancellation);
+                    reject(new Error('Request cancelled'));
+                }
+            }, 100);
+        });
+
         // Create a background tab to Jira
         const tab = await chrome.tabs.create({
             url: 'https://trustpilot-production.atlassian.net/jira/software/c/projects/CSSV/boards/82?assignee=712020%3A9409c59f-3436-489c-96d1-ebf40363ac94',
@@ -135,17 +209,23 @@ async function handleJiraDoneCountRequest(sendResponse) {
         const count = results && results[0] && results[0].result;
         console.log('Background: Sending Jira response with count:', count);
         
-        sendResponse({ 
-            type: 'JIRA_DONE_COUNT_RESULT', 
+        sendResponse({
+            type: 'JIRA_DONE_COUNT_RESULT',
             count: count || null
         });
     } catch (error) {
         console.error('Error handling Jira Done count request:', error);
-        sendResponse({ 
-            type: 'JIRA_DONE_COUNT_RESULT', 
-            count: null, 
-            error: error.message 
-        });
+        if (error.message === 'Request cancelled') {
+            console.log('Jira request was cancelled');
+        } else {
+            sendResponse({
+                type: 'JIRA_DONE_COUNT_RESULT',
+                count: null,
+                error: error.message
+            });
+        }
+    } finally {
+        activeRequests.delete(requestId);
     }
 }
 

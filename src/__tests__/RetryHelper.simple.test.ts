@@ -1,9 +1,10 @@
+import { describe, it, expect, vi } from 'vitest';
 import { RetryHelper, NetworkError, RateLimitError } from '../RetryHelper';
 
 describe('RetryHelper', () => {
   describe('withRetry', () => {
     it('should succeed on first attempt', async () => {
-      const mockFn = jest.fn().mockResolvedValue('success');
+      const mockFn = vi.fn().mockResolvedValue('success');
 
       const result = await RetryHelper.withRetry(mockFn);
 
@@ -13,8 +14,8 @@ describe('RetryHelper', () => {
 
     it('should not retry on non-retriable error', async () => {
       const error = new Error('Non-retriable error');
-      const mockFn = jest.fn().mockRejectedValue(error);
-      const mockShouldRetry = jest.fn().mockReturnValue(false);
+      const mockFn = vi.fn().mockRejectedValue(error);
+      const mockShouldRetry = vi.fn().mockReturnValue(false);
 
       await expect(
         RetryHelper.withRetry(mockFn, {

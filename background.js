@@ -189,8 +189,8 @@ async function handleGmailCountRequest(sendResponse) {
 
 async function handleJiraDoneCountRequest(sendResponse) {
     try {
-        // Wait 4 seconds before creating tab to avoid overwhelming when extension opens as new tab
-        await new Promise(resolve => setTimeout(resolve, 4000));
+        // Wait 8 seconds before creating tab to avoid overwhelming when extension opens as new tab (staggered from Gmail)
+        await new Promise(resolve => setTimeout(resolve, 8000));
         // Create a background tab to Jira board, extract Done count, then close it
         const tab = await chrome.tabs.create({
             url: 'https://trustpilot-production.atlassian.net/jira/software/c/projects/CSSV/boards/82?assignee=712020%3A9409c59f-3436-489c-96d1-ebf40363ac94',

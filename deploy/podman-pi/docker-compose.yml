@@ -1,0 +1,20 @@
+services:
+  browsernotes:
+    build:
+      context: ../..
+      dockerfile: Containerfile
+    container_name: browsernotes
+    image: browsernotes-api:latest
+    restart: unless-stopped
+    ports:
+      - "3004:3004"
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

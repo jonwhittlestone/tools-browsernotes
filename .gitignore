@@ -90,7 +90,11 @@ jspm_packages/
 tmp/
 temp/
 
-# Jest
-.jest/
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/
 node_moduleskey.pem
 key.pem

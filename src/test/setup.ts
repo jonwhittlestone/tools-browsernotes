@@ -1,19 +1,21 @@
+import { vi } from 'vitest';
+
 const mockChrome = {
   storage: {
     local: {
-      get: jest.fn((keys, callback) => {
+      get: vi.fn((keys, callback) => {
         if (typeof callback === 'function') {
           callback({});
         }
         return Promise.resolve({});
       }),
-      set: jest.fn((items, callback) => {
+      set: vi.fn((items, callback) => {
         if (typeof callback === 'function') {
           callback();
         }
         return Promise.resolve();
       }),
-      remove: jest.fn((keys, callback) => {
+      remove: vi.fn((keys, callback) => {
         if (typeof callback === 'function') {
           callback();
         }
@@ -21,13 +23,13 @@ const mockChrome = {
       }),
     },
     sync: {
-      get: jest.fn((keys, callback) => {
+      get: vi.fn((keys, callback) => {
         if (typeof callback === 'function') {
           callback({});
         }
         return Promise.resolve({});
       }),
-      set: jest.fn((items, callback) => {
+      set: vi.fn((items, callback) => {
         if (typeof callback === 'function') {
           callback();
         }
@@ -35,73 +37,63 @@ const mockChrome = {
       }),
     },
     onChanged: {
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
     },
   },
   runtime: {
     onInstalled: {
-      addListener: jest.fn(),
+      addListener: vi.fn(),
     },
     onMessage: {
-      addListener: jest.fn(),
+      addListener: vi.fn(),
     },
-    sendMessage: jest.fn(),
-    openOptionsPage: jest.fn(),
+    sendMessage: vi.fn(),
+    openOptionsPage: vi.fn(),
     id: 'test-extension-id',
     lastError: null,
   },
   identity: {
-    launchWebAuthFlow: jest.fn(),
+    launchWebAuthFlow: vi.fn(),
   },
   contextMenus: {
-    create: jest.fn(),
+    create: vi.fn(),
     onClicked: {
-      addListener: jest.fn(),
+      addListener: vi.fn(),
     },
   },
   tabs: {
-    create: jest.fn(),
-    query: jest.fn(),
-    reload: jest.fn(),
+    create: vi.fn(),
+    query: vi.fn(),
+    reload: vi.fn(),
   },
   action: {
     onClicked: {
-      addListener: jest.fn(),
+      addListener: vi.fn(),
     },
   },
 };
 
 (globalThis as any).chrome = mockChrome;
 
-// Mock crypto for code verifier generation
-(globalThis as any).crypto = {
-  getRandomValues: jest.fn((array) => {
+// Mock crypto for code verifier generation — crypto is read-only in jsdom,
+// so we stub individual methods rather than replacing the object.
+vi.stubGlobal('crypto', {
+  getRandomValues: vi.fn((array: Uint8Array) => {
     for (let i = 0; i < array.length; i++) {
       array[i] = Math.floor(Math.random() * 256);
     }
     return array;
   }),
   subtle: {
-    digest: jest.fn(() => Promise.resolve(new ArrayBuffer(32))),
+    digest: vi.fn(() => Promise.resolve(new ArrayBuffer(32))),
   },
-};
-
-// Mock btoa/atob
-const mockBtoa = jest.fn((str: string) => 'mocked-base64-' + str);
-const mockAtob = jest.fn((str: string) => str.replace('mocked-base64-', ''));
-(globalThis as any).btoa = mockBtoa;
-(globalThis as any).atob = mockAtob;
+});
 
 // Mock fetch
-(globalThis as any).fetch = jest.fn();
+vi.stubGlobal('fetch', vi.fn());
 
-// Mock window object for Dropbox config
-(globalThis as any).window = {
-  ...globalThis.window,
-  DROPBOX_CONFIG: {
-    APP_KEY: 'test-dropbox-key',
-  },
-  setInterval: jest.fn(),
-  clearInterval: jest.fn(),
+// Set Dropbox config on window
+(window as any).DROPBOX_CONFIG = {
+  APP_KEY: 'test-dropbox-key',
 };

@@ -6,13 +6,19 @@ module.exports = {
   entry: {
     settings: './src/SettingsUI.ts',
     app: './src/NotesAppWithDropbox.ts',
-    offscreen: './src/offscreen.ts'
+    offscreen: './src/offscreen.ts',
+    web: './web/app.ts',
   },
   module: {
     rules: [
       {
         test: /\.tsx?$/,
-        use: 'ts-loader',
+        use: {
+          loader: 'ts-loader',
+          options: {
+            configFile: 'tsconfig.web.json',
+          },
+        },
         exclude: /node_modules/,
       },
     ],
