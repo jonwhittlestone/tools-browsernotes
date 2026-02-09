@@ -2,6 +2,8 @@ import { VimMode } from '../src/VimMode';
 import { WebDropboxClient, DropboxStatus } from './WebDropboxClient';
 import { TaskView } from './TaskView';
 import { SettingsPanel, WebSettings } from './SettingsPanel';
+import { parseMarkdown, isDateHeading } from './MarkdownParser';
+import { getArchiveFilePath, insertTaskIntoArchive } from '../src/ArchiveHelper';
 
 export class WebNotesApp {
   notepad: HTMLTextAreaElement;
@@ -65,6 +67,8 @@ export class WebNotesApp {
         this.saveNotes();
         this.updateTaskCount();
       },
+      onArchiveTask: (taskRaw: string, dateHeading: string) =>
+        this.archiveTask(taskRaw, dateHeading),
     });
     this.settingsPanel = new SettingsPanel({
       dropbox: this.dropbox,
@@ -92,6 +96,9 @@ export class WebNotesApp {
     if (this.currentView !== 'text') {
       this.switchView(this.currentView);
     }
+
+    // Reveal page now that content is loaded and rendered
+    document.querySelector('.container')?.removeAttribute('style');
   }
 
   loadLocalSettings(): void {
@@ -412,6 +419,26 @@ export class WebNotesApp {
     this.saveNotes();
   }
 
+  async archiveTask(taskRaw: string, dateHeading: string): Promise<void> {
+    if (!this.dropboxConnected || !this.currentFilePath) {
+      console.error('Cannot archive: Dropbox not connected or no file path');
+      return;
+    }
+
+    const archivePath = getArchiveFilePath(this.currentFilePath);
+
+    let archiveContent = '';
+    try {
+      const result = await this.dropbox.readFile(archivePath);
+      archiveContent = result.content;
+    } catch {
+      // Archive file doesn't exist yet
+    }
+
+    const updatedContent = insertTaskIntoArchive(archiveContent, dateHeading, taskRaw);
+    await this.dropbox.writeFile(archivePath, updatedContent);
+  }
+
   async emailFamilyPlanner(): Promise<void> {
     const originalText = this.familyPlannerBtn.textContent;
     this.familyPlannerBtn.textContent = 'Sending...';
@@ -458,12 +485,10 @@ export class WebNotesApp {
   }
 
   updateTaskCount(): void {
-    const content = this.notepad.value;
-    const lines = content.split('\n');
-    const count = lines.filter((line) => {
-      const trimmed = line.trimStart();
-      return trimmed.startsWith('-') && !trimmed.match(/^-{3,}$/);
-    }).length;
+    const sections = parseMarkdown(this.notepad.value);
+    const count = sections
+      .filter(s => s.header && isDateHeading(s.header.text))
+      .reduce((sum, s) => sum + s.lines.filter(l => l.type === 'task' || l.type === 'completed-task').length, 0);
     this.taskCount.textContent = `${count}`;
   }
 

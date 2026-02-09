@@ -6,6 +6,7 @@ import {
   toggleTaskCompletion,
   createTaskLine,
   updateTaskText,
+  isDateHeading,
   ParsedLine,
 } from '../MarkdownParser';
 
@@ -167,6 +168,30 @@ describe('toggleTaskCompletion', () => {
     const line: ParsedLine = { type: 'text', raw: 'Hello', text: 'Hello' };
     const toggled = toggleTaskCompletion(line);
     expect(toggled).toBe(line);
+  });
+});
+
+describe('isDateHeading', () => {
+  it('matches full date with week and day suffix', () => {
+    expect(isDateHeading('2026-01-28-W5-Wed')).toBe(true);
+  });
+
+  it('matches plain date', () => {
+    expect(isDateHeading('2026-02-09')).toBe(true);
+  });
+
+  it('matches date with extra text', () => {
+    expect(isDateHeading('2026-02-09 Monday')).toBe(true);
+  });
+
+  it('rejects non-date headings', () => {
+    expect(isDateHeading('notes')).toBe(false);
+    expect(isDateHeading('Today')).toBe(false);
+    expect(isDateHeading('my-tasks')).toBe(false);
+  });
+
+  it('rejects empty string', () => {
+    expect(isDateHeading('')).toBe(false);
   });
 });
 

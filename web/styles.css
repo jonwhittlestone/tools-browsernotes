@@ -248,12 +248,21 @@ h1 {
 }
 
 .task-section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
     font-size: 18px;
     font-weight: 600;
     color: #e0e0e0;
     padding: 8px 4px;
     border-bottom: 1px solid #3e3e3e;
     margin-bottom: 4px;
+}
+
+.task-section-header-ago {
+    font-size: 13px;
+    font-weight: 400;
+    color: #888;
 }
 
 .task-list {
@@ -316,6 +325,16 @@ h1 {
     color: #d4d4d4;
     cursor: text;
     min-height: 21px;
+}
+
+.task-item-text a {
+    color: #569cd6;
+    text-decoration: underline;
+    text-decoration-color: rgba(86, 156, 214, 0.4);
+}
+
+.task-item-text a:hover {
+    text-decoration-color: #569cd6;
 }
 
 .task-edit-input {
@@ -720,6 +739,22 @@ h1 {
 .task-emoji-btn:hover {
     border-color: #569cd6;
     opacity: 1;
+}
+
+.task-archive-btn {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    border: 1px solid #2d5a3d;
+    background: #1a3a2a;
+    color: #4caf50;
+    cursor: pointer;
+    white-space: nowrap;
+    margin-left: 4px;
+}
+
+.task-archive-btn:hover {
+    background: #2d5a3d;
 }
 
 /* Emoji picker modal */

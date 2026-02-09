@@ -7,12 +7,14 @@ import {
   toggleTaskCompletion,
   createTaskLine,
   updateTaskText,
+  isDateHeading,
 } from './MarkdownParser';
 import { EmojiPicker } from './EmojiPicker';
 
 export interface TaskViewOptions {
   container: HTMLElement;
   onContentChange: (markdown: string) => void;
+  onArchiveTask?: (taskRaw: string, dateHeading: string) => Promise<void>;
 }
 
 /**
@@ -23,6 +25,7 @@ export interface TaskViewOptions {
 export class TaskView {
   private container: HTMLElement;
   private onContentChange: (markdown: string) => void;
+  private onArchiveTask?: (taskRaw: string, dateHeading: string) => Promise<void>;
   private sections: ParsedSection[] = [];
   private editingElement: HTMLElement | null = null;
   private sortables: Sortable[] = [];
@@ -30,6 +33,7 @@ export class TaskView {
   constructor(options: TaskViewOptions) {
     this.container = options.container;
     this.onContentChange = options.onContentChange;
+    this.onArchiveTask = options.onArchiveTask;
   }
 
   /**
@@ -47,6 +51,8 @@ export class TaskView {
 
     for (let si = 0; si < this.sections.length; si++) {
       const section = this.sections[si];
+      // Only render sections under date headings (e.g. ## 2026-01-28-W5-Wed)
+      if (!section.header || !isDateHeading(section.header.text)) continue;
       const sectionEl = this.createSectionElement(section, si);
       this.container.appendChild(sectionEl);
     }
@@ -101,6 +107,20 @@ export class TaskView {
       const headerEl = document.createElement('div');
       headerEl.className = 'task-section-header';
       headerEl.textContent = section.header.text;
+
+      if (isDateHeading(section.header.text)) {
+        const dateStr = section.header.text.trim().slice(0, 10); // YYYY-MM-DD
+        const headingDate = new Date(dateStr + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((today.getTime() - headingDate.getTime()) / 86400000);
+        if (diffDays !== 0) {
+          const ago = document.createElement('small');
+          ago.className = 'task-section-header-ago';
+          ago.textContent = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+          headerEl.appendChild(ago);
+        }
+      }
       el.appendChild(headerEl);
     }
 
@@ -145,12 +165,16 @@ export class TaskView {
       this.toggleTask(sectionIndex, lineIndex);
     });
 
-    // Emoji button
+    // Emoji button — blank if no emoji set, inviting the user to choose one
+    const leadingEmoji = this.getLeadingEmoji(line.text);
     const emojiBtn = document.createElement('button');
     emojiBtn.className = 'task-emoji-btn';
-    const leadingEmoji = this.getLeadingEmoji(line.text);
-    emojiBtn.textContent = leadingEmoji || '😀';
-    if (!leadingEmoji) emojiBtn.classList.add('placeholder');
+    if (leadingEmoji) {
+      emojiBtn.textContent = leadingEmoji;
+    } else {
+      emojiBtn.textContent = '';
+      emojiBtn.classList.add('placeholder');
+    }
     emojiBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.openEmojiPicker(sectionIndex, lineIndex, leadingEmoji);
@@ -159,10 +183,13 @@ export class TaskView {
     // Text
     const textEl = document.createElement('div');
     textEl.className = 'task-item-text';
-    textEl.textContent = leadingEmoji
+    const displayText = leadingEmoji
       ? line.text.slice(leadingEmoji.length).trimStart()
       : line.text;
+    textEl.innerHTML = this.linkifyText(displayText);
     textEl.addEventListener('click', (e) => {
+      // Don't start editing if user clicked a link
+      if ((e.target as HTMLElement).tagName === 'A') return;
       e.stopPropagation();
       this.startEditing(textEl, sectionIndex, lineIndex);
     });
@@ -178,6 +205,17 @@ export class TaskView {
     el.appendChild(textEl);
     el.appendChild(handle);
 
+    if (line.type === 'completed-task' && this.onArchiveTask) {
+      const archiveBtn = document.createElement('button');
+      archiveBtn.className = 'task-archive-btn';
+      archiveBtn.textContent = 'Archive';
+      archiveBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.archiveTask(sectionIndex, lineIndex);
+      });
+      el.appendChild(archiveBtn);
+    }
+
     return el;
   }
 
@@ -191,6 +229,53 @@ export class TaskView {
     section.lines[lineIndex] = toggleTaskCompletion(line);
     this.emitChange();
     this.render(serializeMarkdown(this.sections));
+  }
+
+  private async archiveTask(sectionIndex: number, lineIndex: number): Promise<void> {
+    const section = this.sections[sectionIndex];
+    if (!section || !this.onArchiveTask) return;
+
+    const line = section.lines[lineIndex];
+    if (!line || line.type !== 'completed-task') return;
+
+    // Collect indented adornment lines that follow this task
+    const adornmentLines: string[] = [];
+    let nextIdx = lineIndex + 1;
+    while (nextIdx < section.lines.length) {
+      const next = section.lines[nextIdx];
+      // Adornment lines are indented text (not top-level tasks/headers/separators)
+      if (next.type === 'text' && next.raw.length > 0 && next.raw[0] === ' ') {
+        adornmentLines.push(next.raw);
+        nextIdx++;
+      } else {
+        break;
+      }
+    }
+
+    const dateHeading = section.header?.text || '';
+    const taskWithAdornments = adornmentLines.length > 0
+      ? line.raw + '\n' + adornmentLines.join('\n')
+      : line.raw;
+
+    try {
+      await this.onArchiveTask(taskWithAdornments, dateHeading);
+
+      // Remove the task and its adornment lines from the section
+      section.lines.splice(lineIndex, 1 + adornmentLines.length);
+
+      // If no tasks remain in this section, remove the entire section
+      const hasTasks = section.lines.some(
+        (l) => l.type === 'task' || l.type === 'completed-task',
+      );
+      if (!hasTasks) {
+        this.sections.splice(sectionIndex, 1);
+      }
+
+      this.emitChange();
+      this.render(serializeMarkdown(this.sections));
+    } catch (e) {
+      console.error('Failed to archive task:', e);
+    }
   }
 
   private startEditing(
@@ -243,19 +328,46 @@ export class TaskView {
     input.select();
   }
 
+  private todayHeading(): string {
+    const date = new Date();
+    const startDate = new Date(date.getFullYear(), 0, 1);
+    const days = Math.floor((date.getTime() - startDate.getTime()) / 86400000);
+    const weekNumber = Math.ceil((days + startDate.getDay() + 1) / 7);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
+    return `${year}-${month}-${day}-W${weekNumber}-${weekday}`;
+  }
+
   private addTask(): void {
-    // Add to the first section that has a header, or the first section
-    let targetSection = 0;
+    const todayText = this.todayHeading();
+
+    // Find today's section
+    let targetSection = -1;
     for (let i = 0; i < this.sections.length; i++) {
-      if (this.sections[i].header) {
+      if (this.sections[i].header && this.sections[i].header!.text.trim() === todayText) {
         targetSection = i;
         break;
       }
     }
 
-    if (this.sections.length === 0) {
-      this.sections.push({ header: null, lines: [] });
-      targetSection = 0;
+    // Create today's section at the top if it doesn't exist
+    if (targetSection === -1) {
+      const header: ParsedLine = { type: 'header', raw: `## ${todayText}`, text: todayText };
+      const lines: ParsedLine[] = [
+        { type: 'text', raw: '', text: '' },
+        { type: 'separator', raw: '---', text: '---' },
+        { type: 'text', raw: '', text: '' },
+      ];
+      const newSection: ParsedSection = { header, lines };
+      // Insert after any headerless preamble, or at position 0
+      let insertAt = 0;
+      if (this.sections.length > 0 && !this.sections[0].header) {
+        insertAt = 1;
+      }
+      this.sections.splice(insertAt, 0, newSection);
+      targetSection = insertAt;
     }
 
     const newLine = createTaskLine('');
@@ -358,6 +470,70 @@ export class TaskView {
     );
     this.emitChange();
     this.render(serializeMarkdown(this.sections));
+  }
+
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /**
+   * Convert plain text to HTML with clickable links for URLs and phone numbers.
+   */
+  private linkifyText(text: string): string {
+    const escaped = this.escapeHtml(text);
+    // URL pattern: http(s)://, www., or domain.tld paths
+    const urlPattern = /(?:https?:\/\/|www\.)[^\s<]+/gi;
+    // Phone pattern: optional +, digits/spaces/dashes/parens, at least 7 digits
+    const phonePattern = /(?:\+?\d[\d\s\-().]{6,}\d)/g;
+
+    // Collect all matches with their positions
+    const matches: { start: number; end: number; html: string }[] = [];
+
+    let m: RegExpExecArray | null;
+    while ((m = urlPattern.exec(escaped)) !== null) {
+      let url = m[0];
+      // Strip trailing punctuation that's likely not part of the URL
+      url = url.replace(/[.,;:!?)]+$/, '');
+      const href = url.startsWith('www.') ? 'https://' + url : url;
+      matches.push({
+        start: m.index,
+        end: m.index + url.length,
+        html: `<a href="${href}" target="_blank" rel="noopener">${url}</a>`,
+      });
+    }
+
+    while ((m = phonePattern.exec(escaped)) !== null) {
+      // Skip if this range overlaps with a URL match
+      const overlaps = matches.some(
+        (existing) => m!.index < existing.end && m!.index + m![0].length > existing.start,
+      );
+      if (overlaps) continue;
+      const phone = m[0];
+      const digits = phone.replace(/[^\d+]/g, '');
+      matches.push({
+        start: m.index,
+        end: m.index + phone.length,
+        html: `<a href="tel:${digits}">${phone}</a>`,
+      });
+    }
+
+    if (matches.length === 0) return escaped;
+
+    // Sort by position and rebuild
+    matches.sort((a, b) => a.start - b.start);
+    let result = '';
+    let lastEnd = 0;
+    for (const match of matches) {
+      result += escaped.slice(lastEnd, match.start);
+      result += match.html;
+      lastEnd = match.end;
+    }
+    result += escaped.slice(lastEnd);
+    return result;
   }
 
   private emitChange(): void {
