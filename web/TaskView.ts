@@ -235,13 +235,30 @@ export class TaskView {
     const line = section.lines[lineIndex];
     if (!line || line.type !== 'completed-task') return;
 
+    // Collect indented adornment lines that follow this task
+    const adornmentLines: string[] = [];
+    let nextIdx = lineIndex + 1;
+    while (nextIdx < section.lines.length) {
+      const next = section.lines[nextIdx];
+      // Adornment lines are indented text (not top-level tasks/headers/separators)
+      if (next.type === 'text' && next.raw.length > 0 && next.raw[0] === ' ') {
+        adornmentLines.push(next.raw);
+        nextIdx++;
+      } else {
+        break;
+      }
+    }
+
     const dateHeading = section.header?.text || '';
+    const taskWithAdornments = adornmentLines.length > 0
+      ? line.raw + '\n' + adornmentLines.join('\n')
+      : line.raw;
 
     try {
-      await this.onArchiveTask(line.raw, dateHeading);
+      await this.onArchiveTask(taskWithAdornments, dateHeading);
 
-      // Remove the task from the section
-      section.lines.splice(lineIndex, 1);
+      // Remove the task and its adornment lines from the section
+      section.lines.splice(lineIndex, 1 + adornmentLines.length);
 
       // If no tasks remain in this section, remove the entire section
       const hasTasks = section.lines.some(

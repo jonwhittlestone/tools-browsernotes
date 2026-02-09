@@ -61,7 +61,8 @@ export function parseArchiveIntoSections(content: string): ArchiveSection[] {
   const sections: ArchiveSection[] = [];
   let currentSection: ArchiveSection | null = null;
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const trimmedLine = line.trim();
 
     if (trimmedLine.match(/^## \d{4}-\d{2}-\d{2}/)) {
@@ -74,7 +75,13 @@ export function parseArchiveIntoSections(content: string): ArchiveSection[] {
         tasks: [],
       };
     } else if (currentSection && trimmedLine.startsWith('- [x]')) {
-      currentSection.tasks.push(trimmedLine);
+      // Collect the task plus any indented adornment lines that follow
+      let taskBlock = line;
+      while (i + 1 < lines.length && lines[i + 1].length > 0 && lines[i + 1][0] === ' ') {
+        i++;
+        taskBlock += '\n' + lines[i];
+      }
+      currentSection.tasks.push(taskBlock);
     }
   }
 
