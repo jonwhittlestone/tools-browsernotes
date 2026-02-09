@@ -731,6 +731,22 @@ h1 {
     opacity: 1;
 }
 
+.task-archive-btn {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    border: 1px solid #2d5a3d;
+    background: #1a3a2a;
+    color: #4caf50;
+    cursor: pointer;
+    white-space: nowrap;
+    margin-left: 4px;
+}
+
+.task-archive-btn:hover {
+    background: #2d5a3d;
+}
+
 /* Emoji picker modal */
 .emoji-picker-overlay {
     position: fixed;

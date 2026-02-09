@@ -14,6 +14,7 @@ import { EmojiPicker } from './EmojiPicker';
 export interface TaskViewOptions {
   container: HTMLElement;
   onContentChange: (markdown: string) => void;
+  onArchiveTask?: (taskRaw: string, dateHeading: string) => Promise<void>;
 }
 
 /**
@@ -24,6 +25,7 @@ export interface TaskViewOptions {
 export class TaskView {
   private container: HTMLElement;
   private onContentChange: (markdown: string) => void;
+  private onArchiveTask?: (taskRaw: string, dateHeading: string) => Promise<void>;
   private sections: ParsedSection[] = [];
   private editingElement: HTMLElement | null = null;
   private sortables: Sortable[] = [];
@@ -31,6 +33,7 @@ export class TaskView {
   constructor(options: TaskViewOptions) {
     this.container = options.container;
     this.onContentChange = options.onContentChange;
+    this.onArchiveTask = options.onArchiveTask;
   }
 
   /**
@@ -199,6 +202,17 @@ export class TaskView {
     el.appendChild(textEl);
     el.appendChild(handle);
 
+    if (line.type === 'completed-task' && this.onArchiveTask) {
+      const archiveBtn = document.createElement('button');
+      archiveBtn.className = 'task-archive-btn';
+      archiveBtn.textContent = 'Archive';
+      archiveBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.archiveTask(sectionIndex, lineIndex);
+      });
+      el.appendChild(archiveBtn);
+    }
+
     return el;
   }
 
@@ -212,6 +226,36 @@ export class TaskView {
     section.lines[lineIndex] = toggleTaskCompletion(line);
     this.emitChange();
     this.render(serializeMarkdown(this.sections));
+  }
+
+  private async archiveTask(sectionIndex: number, lineIndex: number): Promise<void> {
+    const section = this.sections[sectionIndex];
+    if (!section || !this.onArchiveTask) return;
+
+    const line = section.lines[lineIndex];
+    if (!line || line.type !== 'completed-task') return;
+
+    const dateHeading = section.header?.text || '';
+
+    try {
+      await this.onArchiveTask(line.raw, dateHeading);
+
+      // Remove the task from the section
+      section.lines.splice(lineIndex, 1);
+
+      // If no tasks remain in this section, remove the entire section
+      const hasTasks = section.lines.some(
+        (l) => l.type === 'task' || l.type === 'completed-task',
+      );
+      if (!hasTasks) {
+        this.sections.splice(sectionIndex, 1);
+      }
+
+      this.emitChange();
+      this.render(serializeMarkdown(this.sections));
+    } catch (e) {
+      console.error('Failed to archive task:', e);
+    }
   }
 
   private startEditing(

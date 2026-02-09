@@ -1,5 +1,6 @@
 import { VimMode } from "./VimMode";
 import { DropboxService, DropboxEntry } from "./DropboxService";
+import { getArchiveFilePath, insertTaskIntoArchive } from "./ArchiveHelper";
 
 declare global {
   interface Window {
@@ -771,215 +772,27 @@ export class NotesAppWithDropbox {
       return;
     }
 
-    const archivePath = this.getArchiveFilePath(this.currentFilePath);
-    const startTime = Date.now();
+    const archivePath = getArchiveFilePath(this.currentFilePath);
 
     try {
-      // Try to read existing archive file
       let archiveContent = '';
       try {
         archiveContent = await this.dropboxService.readFile(archivePath);
       } catch (error) {
-        // Archive file doesn't exist yet, will create it
         console.log('Archive file does not exist, will create new one');
       }
 
-      // Update archive content
-      const updatedContent = this.insertTaskIntoArchive(archiveContent, dateContext, completedTask, startTime);
+      const updatedContent = insertTaskIntoArchive(archiveContent, dateContext, completedTask);
 
-      // Save updated archive
       if (archiveContent === '') {
-        // Create new file
         await this.dropboxService.createFile(archivePath, updatedContent);
       } else {
-        // Update existing file
         await this.dropboxService.updateFile(archivePath, updatedContent);
       }
-
     } catch (error) {
       console.error('Error updating archive file:', error);
       throw error;
     }
-  }
-
-  getArchiveFileName(originalFileName: string): string {
-    const parts = originalFileName.split('.');
-    if (parts.length > 1) {
-      parts[parts.length - 2] += '.archive';
-      return parts.join('.');
-    }
-    return originalFileName + '.archive';
-  }
-
-  getArchiveFilePath(originalFilePath: string): string {
-    const parts = originalFilePath.split('.');
-    if (parts.length > 1) {
-      parts[parts.length - 2] += '.archive';
-      return parts.join('.');
-    }
-    return originalFilePath + '.archive';
-  }
-
-  insertTaskIntoArchive(archiveContent: string, dateContext: string, completedTask: string, startTime: number): string {
-    const dateHeader = `## ${dateContext}`;
-    
-    // Parse existing content into date sections (skip the timestamp line if it exists)
-    const contentWithoutTimestamp = this.removeTimestampFromArchive(archiveContent);
-    const sections = this.parseArchiveIntoSections(contentWithoutTimestamp);
-    
-    // Find or create the section for this date
-    let targetSection = sections.find(section => section.header === dateHeader);
-    if (!targetSection) {
-      targetSection = {
-        header: dateHeader,
-        date: this.parseDateFromHeader(dateHeader),
-        tasks: []
-      };
-      sections.push(targetSection);
-    }
-    
-    // Add the new task to the section
-    targetSection.tasks.push(completedTask);
-    
-    // Sort sections by date (most recent first)
-    sections.sort((a, b) => {
-      if (a.date && b.date) {
-        return b.date.getTime() - a.date.getTime();
-      }
-      return 0;
-    });
-    
-    // Generate timestamp header
-    const endTime = Date.now();
-    const durationMs = endTime - startTime;
-    const timestampHeader = this.generateTimestampHeader(durationMs);
-    
-    // Rebuild the archive content with timestamp
-    const archiveBody = this.rebuildArchiveFromSections(sections);
-    const result = timestampHeader + '\n\n' + archiveBody;
-    
-    return result;
-  }
-
-  removeTimestampFromArchive(content: string): string {
-    const lines = content.split('\n');
-    // Remove first line if it starts with "Last updated:"
-    if (lines.length > 0 && lines[0].startsWith('Last updated:')) {
-      // Also remove the empty line that follows the timestamp
-      if (lines.length > 1 && lines[1].trim() === '') {
-        return lines.slice(2).join('\n');
-      }
-      return lines.slice(1).join('\n');
-    }
-    return content;
-  }
-
-  generateTimestampHeader(durationMs: number): string {
-    const now = new Date();
-    const humanDate = now.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric', 
-      month: 'long',
-      day: 'numeric'
-    });
-    const humanTime = now.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
-    });
-    
-    // Convert duration to human readable format
-    let durationText;
-    if (durationMs < 1000) {
-      durationText = `${durationMs}ms`;
-    } else if (durationMs < 60000) {
-      const seconds = (durationMs / 1000).toFixed(2);
-      durationText = `${seconds} seconds`;
-    } else {
-      const minutes = Math.floor(durationMs / 60000);
-      const seconds = ((durationMs % 60000) / 1000).toFixed(2);
-      durationText = `${minutes} minutes, ${seconds} seconds`;
-    }
-    
-    return `Last updated: ${humanDate} at ${humanTime} (took ${durationText})`;
-  }
-
-  parseArchiveIntoSections(content: string): { header: string; date: Date | null; tasks: string[] }[] {
-    const lines = content.split('\n');
-    const sections: { header: string; date: Date | null; tasks: string[] }[] = [];
-    let currentSection: { header: string; date: Date | null; tasks: string[] } | null = null;
-    
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      
-      // Check if this is a date header
-      if (trimmedLine.match(/^## \d{4}-\d{2}-\d{2}-W\d{1,2}-\w+/)) {
-        // Save previous section if exists
-        if (currentSection) {
-          sections.push(currentSection);
-        }
-        
-        // Start new section
-        currentSection = {
-          header: trimmedLine,
-          date: this.parseDateFromHeader(trimmedLine),
-          tasks: []
-        };
-      } else if (currentSection && trimmedLine.startsWith('- [x]')) {
-        // Add task to current section
-        currentSection.tasks.push(trimmedLine);
-      }
-      // Skip empty lines and other content
-    }
-    
-    // Don't forget the last section
-    if (currentSection) {
-      sections.push(currentSection);
-    }
-    
-    return sections;
-  }
-
-  parseDateFromHeader(header: string): Date | null {
-    // Extract date from header like "## 2025-09-05-W36-Fri"
-    const match = header.match(/^## (\d{4})-(\d{2})-(\d{2})-W\d{1,2}-(\w+)/);
-    if (match) {
-      const [, year, month, day, weekday] = match;
-      const baseDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      
-      // Verify the weekday matches (for data integrity)
-      const expectedWeekday = baseDate.toLocaleDateString('en-US', { weekday: 'short' });
-      if (expectedWeekday !== weekday) {
-        console.warn(`Date mismatch: ${header} has weekday ${weekday} but should be ${expectedWeekday}`);
-      }
-      
-      return baseDate;
-    }
-    return null;
-  }
-
-  rebuildArchiveFromSections(sections: { header: string; date: Date | null; tasks: string[] }[]): string {
-    const result: string[] = [];
-    
-    for (let i = 0; i < sections.length; i++) {
-      const section = sections[i];
-      
-      // Add header
-      result.push(section.header);
-      
-      // Add tasks
-      for (const task of section.tasks) {
-        result.push(task);
-      }
-      
-      // Add empty line between sections (but not after the last one)
-      if (i < sections.length - 1) {
-        result.push('');
-      }
-    }
-    
-    return result.join('\n');
   }
 }
 

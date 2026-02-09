@@ -67,3 +67,38 @@ Given this markdown:
 - **Task View**: renders only the `2026-02-09-W6-Sun` section with its 2 tasks
 - **Text View**: unchanged, shows all content as before
 - **Serialization**: unchanged, all sections preserved in the underlying markdown
+
+## Archive completed tasks
+
+### Behaviour
+
+When a task is marked as done (ticked) in Task View, an "Archive" button appears on that task item. Clicking it:
+
+1. Appends the task (as `- [x] text`) to the archive file on Dropbox under the matching `## date` heading
+2. Removes the task from the active notes
+3. If the date section has no remaining tasks, removes the entire section (header + separator)
+
+### Archive file path
+
+Derived from the notes file path by inserting `.archive` before the extension:
+- `/notes.md` → `/notes.archive.md`
+- `/tools-browsernotes.md` → `/tools-browsernotes.archive.md`
+
+### Archive file format
+
+```
+Last updated: Sunday, February 9, 2026 at 08:30:00 AM
+
+## 2026-02-09-W6-Sun
+- [x] Buy groceries
+- [x] Walk the dog
+
+## 2026-02-08-W6-Sat
+- [x] Clean the house
+```
+
+Sections are sorted most-recent-first. The timestamp line is regenerated on each write.
+
+### Shared logic
+
+Archive utilities (`getArchiveFilePath`, `insertTaskIntoArchive`, section parsing/rebuilding) live in `src/ArchiveHelper.ts` and are shared by both the Chrome extension and the web frontend, avoiding duplication
