@@ -1,4 +1,4 @@
-import { WebDropboxClient, DropboxStatus } from './WebDropboxClient';
+import { WebDropboxClient, DropboxStatus, RemarkableSyncStatus } from './WebDropboxClient';
 
 export interface SettingsPanelOptions {
   dropbox: WebDropboxClient;
@@ -81,6 +81,39 @@ export class SettingsPanel {
             </select>
           </div>
         </section>
+        <section class="settings-section" id="remarkableSection" style="display:none">
+          <h3>reMarkable Sync</h3>
+          <div class="settings-field">
+            <label>
+              <input type="checkbox" id="remarkableToggle" />
+              Enable sync
+            </label>
+          </div>
+          <div class="settings-field">
+            <label>Source folder</label>
+            <input type="text" id="remarkableSource" class="settings-input" placeholder="/Email Attachments" />
+          </div>
+          <div class="settings-field">
+            <label>Destination folder</label>
+            <input type="text" id="remarkableDest" class="settings-input" placeholder="/DropsyncFiles/jw-mind/..." />
+          </div>
+          <div class="settings-field">
+            <label>Poll interval</label>
+            <select id="remarkableInterval" class="settings-select">
+              <option value="60">1 minute</option>
+              <option value="300" selected>5 minutes</option>
+              <option value="600">10 minutes</option>
+              <option value="900">15 minutes</option>
+              <option value="1800">30 minutes</option>
+            </select>
+          </div>
+          <div class="settings-field" style="display:flex;gap:8px">
+            <button class="settings-btn primary" id="remarkableSyncNow">Sync Now</button>
+            <button class="settings-btn" id="remarkableSaveConfig">Save</button>
+          </div>
+          <div id="remarkableSyncResult" class="remarkable-sync-result" style="display:none"></div>
+          <div id="remarkableLog" class="remarkable-log"></div>
+        </section>
         <section class="settings-section">
           <h3>Editor</h3>
           <div class="settings-field">
@@ -108,6 +141,13 @@ export class SettingsPanel {
       this.saveSettings(),
     );
 
+    panel.querySelector('#remarkableSyncNow')!.addEventListener('click', () =>
+      this.triggerRemarkableSync(),
+    );
+    panel.querySelector('#remarkableSaveConfig')!.addEventListener('click', () =>
+      this.saveRemarkableConfig(),
+    );
+
     return panel;
   }
 
@@ -117,6 +157,7 @@ export class SettingsPanel {
     this.panel.classList.add('visible');
     this.loadSettings();
     await this.refreshDropboxStatus();
+    await this.refreshRemarkableStatus();
   }
 
   close(): void {
@@ -286,6 +327,97 @@ export class SettingsPanel {
     } catch (error) {
       folderListEl.innerHTML =
         '<div class="settings-error">Failed to load files</div>';
+    }
+  }
+
+  private async refreshRemarkableStatus(): Promise<void> {
+    const section = this.panel.querySelector('#remarkableSection') as HTMLElement;
+    try {
+      const status: RemarkableSyncStatus = await this.dropbox.getRemarkableStatus();
+      section.style.display = 'block';
+
+      const toggle = this.panel.querySelector('#remarkableToggle') as HTMLInputElement;
+      const source = this.panel.querySelector('#remarkableSource') as HTMLInputElement;
+      const dest = this.panel.querySelector('#remarkableDest') as HTMLInputElement;
+      const interval = this.panel.querySelector('#remarkableInterval') as HTMLSelectElement;
+
+      toggle.checked = status.enabled;
+      source.value = status.source_folder;
+      dest.value = status.dest_folder;
+      interval.value = String(status.poll_interval_seconds);
+
+      this.renderRemarkableLog(status.recent_syncs);
+    } catch {
+      // Dropbox not connected — hide section
+      section.style.display = 'none';
+    }
+  }
+
+  private renderRemarkableLog(entries: RemarkableSyncStatus['recent_syncs']): void {
+    const logEl = this.panel.querySelector('#remarkableLog') as HTMLElement;
+    if (!entries.length) {
+      logEl.innerHTML = '<div class="remarkable-log-empty">No sync activity yet</div>';
+      return;
+    }
+    logEl.innerHTML = entries.slice(0, 10).map(e => {
+      const time = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const size = e.size_bytes ? `${Math.round(e.size_bytes / 1024)}KB` : '';
+      const statusClass = e.status === 'copied' ? 'copied' : e.status === 'error' ? 'error' : 'skipped';
+      return `<div class="remarkable-log-entry">
+        <span class="remarkable-log-time">${time}</span>
+        <span class="remarkable-log-name" title="${e.source_path}">${e.file_name}</span>
+        <span class="remarkable-log-status ${statusClass}">${e.status}</span>
+        <span class="remarkable-log-size">${size}</span>
+      </div>`;
+    }).join('');
+  }
+
+  private async saveRemarkableConfig(): Promise<void> {
+    const toggle = this.panel.querySelector('#remarkableToggle') as HTMLInputElement;
+    const source = this.panel.querySelector('#remarkableSource') as HTMLInputElement;
+    const dest = this.panel.querySelector('#remarkableDest') as HTMLInputElement;
+    const interval = this.panel.querySelector('#remarkableInterval') as HTMLSelectElement;
+
+    await this.dropbox.saveRemarkableConfig({
+      enabled: toggle.checked,
+      source_folder: source.value,
+      dest_folder: dest.value,
+      poll_interval_seconds: parseInt(interval.value),
+    });
+
+    const resultEl = this.panel.querySelector('#remarkableSyncResult') as HTMLElement;
+    resultEl.style.display = 'block';
+    resultEl.textContent = 'Settings saved';
+    resultEl.className = 'remarkable-sync-result success';
+    setTimeout(() => { resultEl.style.display = 'none'; }, 2000);
+  }
+
+  private async triggerRemarkableSync(): Promise<void> {
+    const btn = this.panel.querySelector('#remarkableSyncNow') as HTMLButtonElement;
+    const resultEl = this.panel.querySelector('#remarkableSyncResult') as HTMLElement;
+    btn.disabled = true;
+    btn.textContent = 'Syncing...';
+    resultEl.style.display = 'block';
+    resultEl.textContent = 'Syncing...';
+    resultEl.className = 'remarkable-sync-result';
+
+    try {
+      const result = await this.dropbox.triggerRemarkableSync();
+      const parts: string[] = [];
+      if (result.files_copied) parts.push(`${result.files_copied} copied`);
+      if (result.files_skipped) parts.push(`${result.files_skipped} skipped`);
+      if (result.errors.length) parts.push(`${result.errors.length} errors`);
+      resultEl.textContent = parts.length ? parts.join(', ') : 'No new files';
+      resultEl.className = `remarkable-sync-result ${result.errors.length ? 'error' : 'success'}`;
+
+      // Refresh the log
+      await this.refreshRemarkableStatus();
+    } catch (e) {
+      resultEl.textContent = 'Sync failed';
+      resultEl.className = 'remarkable-sync-result error';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sync Now';
     }
   }
 

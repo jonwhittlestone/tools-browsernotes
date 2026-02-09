@@ -1,4 +1,6 @@
+import asyncio
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Form
@@ -8,9 +10,19 @@ from fastapi.staticfiles import StaticFiles
 from server.auth import is_authenticated, create_session_cookie, clear_session_cookie
 from server.config import AUTH_PASSWORD, PORT, DATA_DIR, ROOT_PATH
 from server.dropbox_proxy import router as dropbox_router
+from server.remarkable_sync import router as remarkable_router, remarkable_sync_loop
 
-app = FastAPI(root_path=ROOT_PATH)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(remarkable_sync_loop())
+    yield
+    task.cancel()
+
+
+app = FastAPI(root_path=ROOT_PATH, lifespan=lifespan)
 app.include_router(dropbox_router)
+app.include_router(remarkable_router)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 WEB_DIR = PROJECT_ROOT / "web"

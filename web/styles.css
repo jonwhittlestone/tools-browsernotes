@@ -604,6 +604,97 @@ h1 {
     padding: 8px;
 }
 
+/* reMarkable sync */
+
+.settings-input {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #3e3e3e;
+    background: #252525;
+    color: #d4d4d4;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.settings-input:focus {
+    outline: none;
+    border-color: #569cd6;
+}
+
+.remarkable-sync-result {
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.remarkable-sync-result.success {
+    color: #4caf50;
+}
+
+.remarkable-sync-result.error {
+    color: #f44336;
+}
+
+.remarkable-log {
+    margin-top: 8px;
+}
+
+.remarkable-log-empty {
+    color: #666;
+    font-size: 13px;
+    padding: 8px 0;
+}
+
+.remarkable-log-entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+    border-bottom: 1px solid #2d2d2d;
+}
+
+.remarkable-log-time {
+    color: #666;
+    min-width: 50px;
+}
+
+.remarkable-log-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.remarkable-log-status {
+    font-size: 12px;
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+
+.remarkable-log-status.copied {
+    background: #1b3a1b;
+    color: #4caf50;
+}
+
+.remarkable-log-status.skipped {
+    background: #3a3a1b;
+    color: #ff9800;
+}
+
+.remarkable-log-status.error {
+    background: #3a1b1b;
+    color: #f44336;
+}
+
+.remarkable-log-size {
+    color: #666;
+    min-width: 50px;
+    text-align: right;
+}
+
 /* Emoji button in task items */
 .task-emoji-btn {
     width: 28px;

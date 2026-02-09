@@ -115,4 +115,68 @@ export class WebDropboxClient {
   initiateAuth(): void {
     window.location.href = `${basePath()}/api/dropbox/auth`;
   }
+
+  // --- Remarkable Sync ---
+
+  async getRemarkableStatus(): Promise<RemarkableSyncStatus> {
+    const resp = await fetch(`${basePath()}/api/remarkable/status`);
+    if (!resp.ok) throw new Error(`Remarkable status failed: ${resp.status}`);
+    return resp.json();
+  }
+
+  async saveRemarkableConfig(config: Partial<RemarkableSyncConfig>): Promise<void> {
+    await fetch(`${basePath()}/api/remarkable/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config),
+    });
+  }
+
+  async triggerRemarkableSync(): Promise<RemarkableSyncResult> {
+    const resp = await fetch(`${basePath()}/api/remarkable/sync`, {
+      method: 'POST',
+    });
+    if (!resp.ok) throw new Error(`Remarkable sync failed: ${resp.status}`);
+    return resp.json();
+  }
+
+  async getRemarkableSyncLog(): Promise<SyncLogEntry[]> {
+    const resp = await fetch(`${basePath()}/api/remarkable/log`);
+    if (!resp.ok) throw new Error(`Remarkable log failed: ${resp.status}`);
+    const data = await resp.json();
+    return data.entries;
+  }
+}
+
+export interface RemarkableSyncStatus {
+  enabled: boolean;
+  source_folder: string;
+  dest_folder: string;
+  poll_interval_seconds: number;
+  last_sync: string | null;
+  recent_syncs: SyncLogEntry[];
+}
+
+export interface RemarkableSyncConfig {
+  enabled: boolean;
+  source_folder: string;
+  dest_folder: string;
+  poll_interval_seconds: number;
+}
+
+export interface RemarkableSyncResult {
+  files_copied: number;
+  files_skipped: number;
+  errors: string[];
+  details: { file_name: string; status: string; size_bytes?: number; error?: string }[];
+}
+
+export interface SyncLogEntry {
+  timestamp: string;
+  file_name: string;
+  source_path: string;
+  dest_path: string;
+  status: 'copied' | 'skipped' | 'error';
+  size_bytes: number;
+  error?: string;
 }
