@@ -2,6 +2,7 @@ import { VimMode } from '../src/VimMode';
 import { WebDropboxClient, DropboxStatus } from './WebDropboxClient';
 import { TaskView } from './TaskView';
 import { SettingsPanel, WebSettings } from './SettingsPanel';
+import { parseMarkdown, isDateHeading } from './MarkdownParser';
 
 export class WebNotesApp {
   notepad: HTMLTextAreaElement;
@@ -92,6 +93,9 @@ export class WebNotesApp {
     if (this.currentView !== 'text') {
       this.switchView(this.currentView);
     }
+
+    // Reveal page now that content is loaded and rendered
+    document.querySelector('.container')?.removeAttribute('style');
   }
 
   loadLocalSettings(): void {
@@ -458,12 +462,10 @@ export class WebNotesApp {
   }
 
   updateTaskCount(): void {
-    const content = this.notepad.value;
-    const lines = content.split('\n');
-    const count = lines.filter((line) => {
-      const trimmed = line.trimStart();
-      return trimmed.startsWith('-') && !trimmed.match(/^-{3,}$/);
-    }).length;
+    const sections = parseMarkdown(this.notepad.value);
+    const count = sections
+      .filter(s => s.header && isDateHeading(s.header.text))
+      .reduce((sum, s) => sum + s.lines.filter(l => l.type === 'task' || l.type === 'completed-task').length, 0);
     this.taskCount.textContent = `${count}`;
   }
 

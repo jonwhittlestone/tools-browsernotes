@@ -7,6 +7,7 @@ import {
   toggleTaskCompletion,
   createTaskLine,
   updateTaskText,
+  isDateHeading,
 } from './MarkdownParser';
 import { EmojiPicker } from './EmojiPicker';
 
@@ -47,6 +48,8 @@ export class TaskView {
 
     for (let si = 0; si < this.sections.length; si++) {
       const section = this.sections[si];
+      // Only render sections under date headings (e.g. ## 2026-01-28-W5-Wed)
+      if (!section.header || !isDateHeading(section.header.text)) continue;
       const sectionEl = this.createSectionElement(section, si);
       this.container.appendChild(sectionEl);
     }
@@ -101,6 +104,20 @@ export class TaskView {
       const headerEl = document.createElement('div');
       headerEl.className = 'task-section-header';
       headerEl.textContent = section.header.text;
+
+      if (isDateHeading(section.header.text)) {
+        const dateStr = section.header.text.trim().slice(0, 10); // YYYY-MM-DD
+        const headingDate = new Date(dateStr + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((today.getTime() - headingDate.getTime()) / 86400000);
+        if (diffDays !== 0) {
+          const ago = document.createElement('small');
+          ago.className = 'task-section-header-ago';
+          ago.textContent = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+          headerEl.appendChild(ago);
+        }
+      }
       el.appendChild(headerEl);
     }
 
@@ -145,12 +162,16 @@ export class TaskView {
       this.toggleTask(sectionIndex, lineIndex);
     });
 
-    // Emoji button
+    // Emoji button — blank if no emoji set, inviting the user to choose one
+    const leadingEmoji = this.getLeadingEmoji(line.text);
     const emojiBtn = document.createElement('button');
     emojiBtn.className = 'task-emoji-btn';
-    const leadingEmoji = this.getLeadingEmoji(line.text);
-    emojiBtn.textContent = leadingEmoji || '😀';
-    if (!leadingEmoji) emojiBtn.classList.add('placeholder');
+    if (leadingEmoji) {
+      emojiBtn.textContent = leadingEmoji;
+    } else {
+      emojiBtn.textContent = '';
+      emojiBtn.classList.add('placeholder');
+    }
     emojiBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.openEmojiPicker(sectionIndex, lineIndex, leadingEmoji);
@@ -243,19 +264,46 @@ export class TaskView {
     input.select();
   }
 
+  private todayHeading(): string {
+    const date = new Date();
+    const startDate = new Date(date.getFullYear(), 0, 1);
+    const days = Math.floor((date.getTime() - startDate.getTime()) / 86400000);
+    const weekNumber = Math.ceil((days + startDate.getDay() + 1) / 7);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
+    return `${year}-${month}-${day}-W${weekNumber}-${weekday}`;
+  }
+
   private addTask(): void {
-    // Add to the first section that has a header, or the first section
-    let targetSection = 0;
+    const todayText = this.todayHeading();
+
+    // Find today's section
+    let targetSection = -1;
     for (let i = 0; i < this.sections.length; i++) {
-      if (this.sections[i].header) {
+      if (this.sections[i].header && this.sections[i].header!.text.trim() === todayText) {
         targetSection = i;
         break;
       }
     }
 
-    if (this.sections.length === 0) {
-      this.sections.push({ header: null, lines: [] });
-      targetSection = 0;
+    // Create today's section at the top if it doesn't exist
+    if (targetSection === -1) {
+      const header: ParsedLine = { type: 'header', raw: `## ${todayText}`, text: todayText };
+      const lines: ParsedLine[] = [
+        { type: 'text', raw: '', text: '' },
+        { type: 'separator', raw: '---', text: '---' },
+        { type: 'text', raw: '', text: '' },
+      ];
+      const newSection: ParsedSection = { header, lines };
+      // Insert after any headerless preamble, or at position 0
+      let insertAt = 0;
+      if (this.sections.length > 0 && !this.sections[0].header) {
+        insertAt = 1;
+      }
+      this.sections.splice(insertAt, 0, newSection);
+      targetSection = insertAt;
     }
 
     const newLine = createTaskLine('');
