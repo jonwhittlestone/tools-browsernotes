@@ -327,6 +327,16 @@ h1 {
     min-height: 21px;
 }
 
+.task-item-text a {
+    color: #569cd6;
+    text-decoration: underline;
+    text-decoration-color: rgba(86, 156, 214, 0.4);
+}
+
+.task-item-text a:hover {
+    text-decoration-color: #569cd6;
+}
+
 .task-edit-input {
     width: 100%;
     background: transparent;

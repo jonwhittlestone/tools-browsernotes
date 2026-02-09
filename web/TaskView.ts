@@ -183,10 +183,13 @@ export class TaskView {
     // Text
     const textEl = document.createElement('div');
     textEl.className = 'task-item-text';
-    textEl.textContent = leadingEmoji
+    const displayText = leadingEmoji
       ? line.text.slice(leadingEmoji.length).trimStart()
       : line.text;
+    textEl.innerHTML = this.linkifyText(displayText);
     textEl.addEventListener('click', (e) => {
+      // Don't start editing if user clicked a link
+      if ((e.target as HTMLElement).tagName === 'A') return;
       e.stopPropagation();
       this.startEditing(textEl, sectionIndex, lineIndex);
     });
@@ -467,6 +470,70 @@ export class TaskView {
     );
     this.emitChange();
     this.render(serializeMarkdown(this.sections));
+  }
+
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /**
+   * Convert plain text to HTML with clickable links for URLs and phone numbers.
+   */
+  private linkifyText(text: string): string {
+    const escaped = this.escapeHtml(text);
+    // URL pattern: http(s)://, www., or domain.tld paths
+    const urlPattern = /(?:https?:\/\/|www\.)[^\s<]+/gi;
+    // Phone pattern: optional +, digits/spaces/dashes/parens, at least 7 digits
+    const phonePattern = /(?:\+?\d[\d\s\-().]{6,}\d)/g;
+
+    // Collect all matches with their positions
+    const matches: { start: number; end: number; html: string }[] = [];
+
+    let m: RegExpExecArray | null;
+    while ((m = urlPattern.exec(escaped)) !== null) {
+      let url = m[0];
+      // Strip trailing punctuation that's likely not part of the URL
+      url = url.replace(/[.,;:!?)]+$/, '');
+      const href = url.startsWith('www.') ? 'https://' + url : url;
+      matches.push({
+        start: m.index,
+        end: m.index + url.length,
+        html: `<a href="${href}" target="_blank" rel="noopener">${url}</a>`,
+      });
+    }
+
+    while ((m = phonePattern.exec(escaped)) !== null) {
+      // Skip if this range overlaps with a URL match
+      const overlaps = matches.some(
+        (existing) => m!.index < existing.end && m!.index + m![0].length > existing.start,
+      );
+      if (overlaps) continue;
+      const phone = m[0];
+      const digits = phone.replace(/[^\d+]/g, '');
+      matches.push({
+        start: m.index,
+        end: m.index + phone.length,
+        html: `<a href="tel:${digits}">${phone}</a>`,
+      });
+    }
+
+    if (matches.length === 0) return escaped;
+
+    // Sort by position and rebuild
+    matches.sort((a, b) => a.start - b.start);
+    let result = '';
+    let lastEnd = 0;
+    for (const match of matches) {
+      result += escaped.slice(lastEnd, match.start);
+      result += match.html;
+      lastEnd = match.end;
+    }
+    result += escaped.slice(lastEnd);
+    return result;
   }
 
   private emitChange(): void {
