@@ -141,6 +141,9 @@ export class SettingsPanel {
       this.saveSettings(),
     );
 
+    panel.querySelector('#remarkableToggle')!.addEventListener('change', () =>
+      this.saveRemarkableConfig(),
+    );
     panel.querySelector('#remarkableSyncNow')!.addEventListener('click', () =>
       this.triggerRemarkableSync(),
     );

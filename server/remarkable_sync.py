@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Request
@@ -41,6 +42,33 @@ def _add_log_entry(config: dict, entry: dict) -> None:
     config["sync_log"] = log[:MAX_LOG_ENTRIES]
 
 
+def _extract_notebook_name(file_name: str) -> str:
+    """Extract notebook name from a reMarkable file name.
+
+    Examples:
+        '~ focus ~ (12).pdf' -> 'focus'
+        '~ focus ~.pdf' -> 'focus'
+        '~ focus ~ - page 40.png' -> 'focus'
+        'random (1).pdf' -> 'random'
+        'random.pdf' -> 'random'
+    """
+    # Tilde-wrapped: ~ name ~
+    m = re.match(r"^~\s*(.+?)\s*~", file_name)
+    if m:
+        return m.group(1).strip()
+    # Plain name: strip copy suffix and extension
+    name = re.sub(r"\s*\(\d+\)\s*", "", file_name)  # remove (N)
+    name = re.sub(r"\s*-\s*page\s+\d+", "", name)  # remove - page N
+    name = re.sub(r"\.[^.]+$", "", name)  # remove extension
+    return name.strip()
+
+
+def _daily_periodic(dt: datetime) -> str:
+    """Build daily-periodic folder name like '2026-02-08-W06-Sat'."""
+    iso_year, iso_week, _ = dt.isocalendar()
+    return dt.strftime(f"%Y-%m-%d-W{iso_week:02d}-%a")
+
+
 async def _ensure_folder_exists(tokens: dict, path: str) -> None:
     """Create destination folder if it doesn't exist."""
     try:
@@ -54,15 +82,17 @@ async def _ensure_folder_exists(tokens: dict, path: str) -> None:
         pass  # Folder may already exist (409) or other error
 
 
-async def _file_exists_at_dest(tokens: dict, path: str) -> bool:
-    """Check if a file already exists at the destination path."""
+async def _get_dest_metadata(tokens: dict, path: str) -> dict | None:
+    """Get metadata for a file at the destination path, or None if not found."""
     response = await _dropbox_request(
         "POST",
         "https://api.dropboxapi.com/2/files/get_metadata",
         tokens,
         json={"path": path},
     )
-    return response.status_code == 200
+    if response.status_code == 200:
+        return response.json()
+    return None
 
 
 async def _copy_file(tokens: dict, from_path: str, to_path: str) -> dict:
@@ -158,16 +188,24 @@ async def run_sync(tokens: dict | None = None) -> dict:
     if new_cursor:
         config["last_sync_cursor"] = new_cursor
 
-    # Copy each new file
-    now = datetime.now(timezone.utc).isoformat()
+    # Copy each new file into {dest}/{notebook}/{daily-periodic}/
+    now_dt = datetime.now(timezone.utc)
+    now = now_dt.isoformat()
+    daily = _daily_periodic(now_dt)
     for entry in entries:
         file_name = entry["name"]
         source_path = entry["path_display"]
-        dest_path = f"{dest}/{file_name}"
+        notebook = _extract_notebook_name(file_name)
+        dest_folder = f"{dest}/{notebook}/{daily}"
+        dest_path = f"{dest_folder}/{file_name}"
         size_bytes = entry.get("size", 0)
 
         try:
-            if await _file_exists_at_dest(tokens, dest_path):
+            dest_meta = await _get_dest_metadata(tokens, dest_path)
+            dest_size = dest_meta.get("size", 0) if dest_meta else None
+            size_changed = dest_meta is not None and dest_size != size_bytes
+
+            if dest_meta and not size_changed:
                 log_entry = {
                     "timestamp": now,
                     "file_name": file_name,
@@ -182,19 +220,26 @@ async def run_sync(tokens: dict | None = None) -> dict:
                     {"file_name": file_name, "status": "skipped", "size_bytes": size_bytes}
                 )
             else:
+                status = "copied (updated)" if size_changed else "copied"
+                if size_changed:
+                    logger.info(
+                        "Size changed for %s: dest=%d src=%d",
+                        file_name, dest_size, size_bytes,
+                    )
+                await _ensure_folder_exists(tokens, dest_folder)
                 await _copy_file(tokens, source_path, dest_path)
                 log_entry = {
                     "timestamp": now,
                     "file_name": file_name,
                     "source_path": source_path,
                     "dest_path": dest_path,
-                    "status": "copied",
+                    "status": status,
                     "size_bytes": size_bytes,
                 }
                 _add_log_entry(config, log_entry)
                 results["files_copied"] += 1
                 results["details"].append(
-                    {"file_name": file_name, "status": "copied", "size_bytes": size_bytes}
+                    {"file_name": file_name, "status": status, "size_bytes": size_bytes}
                 )
                 logger.info("Copied %s -> %s", source_path, dest_path)
         except Exception as e:
