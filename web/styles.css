@@ -708,6 +708,15 @@ h1 {
     color: #f44336;
 }
 
+.remarkable-log-ocr {
+    font-size: 0.7em;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #1a3a2a;
+    color: #4caf50;
+    cursor: default;
+}
+
 .remarkable-log-size {
     color: #666;
     min-width: 50px;

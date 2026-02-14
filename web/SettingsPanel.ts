@@ -90,6 +90,12 @@ export class SettingsPanel {
             </label>
           </div>
           <div class="settings-field">
+            <label>
+              <input type="checkbox" id="remarkableOcrToggle" />
+              Enable OCR
+            </label>
+          </div>
+          <div class="settings-field">
             <label>Source folder</label>
             <input type="text" id="remarkableSource" class="settings-input" placeholder="/Email Attachments" />
           </div>
@@ -142,6 +148,9 @@ export class SettingsPanel {
     );
 
     panel.querySelector('#remarkableToggle')!.addEventListener('change', () =>
+      this.saveRemarkableConfig(),
+    );
+    panel.querySelector('#remarkableOcrToggle')!.addEventListener('change', () =>
       this.saveRemarkableConfig(),
     );
     panel.querySelector('#remarkableSyncNow')!.addEventListener('click', () =>
@@ -340,11 +349,13 @@ export class SettingsPanel {
       section.style.display = 'block';
 
       const toggle = this.panel.querySelector('#remarkableToggle') as HTMLInputElement;
+      const ocrToggle = this.panel.querySelector('#remarkableOcrToggle') as HTMLInputElement;
       const source = this.panel.querySelector('#remarkableSource') as HTMLInputElement;
       const dest = this.panel.querySelector('#remarkableDest') as HTMLInputElement;
       const interval = this.panel.querySelector('#remarkableInterval') as HTMLSelectElement;
 
       toggle.checked = status.enabled;
+      ocrToggle.checked = status.ocr_enabled;
       source.value = status.source_folder;
       dest.value = status.dest_folder;
       interval.value = String(status.poll_interval_seconds);
@@ -366,10 +377,12 @@ export class SettingsPanel {
       const time = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const size = e.size_bytes ? `${Math.round(e.size_bytes / 1024)}KB` : '';
       const statusClass = e.status === 'copied' ? 'copied' : e.status === 'error' ? 'error' : 'skipped';
+      const ocrBadge = e.ocr_status === 'completed' ? `<span class="remarkable-log-ocr" title="${e.ocr_lines} lines → ${e.ocr_text_path}">OCR</span>` : '';
       return `<div class="remarkable-log-entry">
         <span class="remarkable-log-time">${time}</span>
         <span class="remarkable-log-name" title="${e.source_path}">${e.file_name}</span>
         <span class="remarkable-log-status ${statusClass}">${e.status}</span>
+        ${ocrBadge}
         <span class="remarkable-log-size">${size}</span>
       </div>`;
     }).join('');
@@ -377,12 +390,14 @@ export class SettingsPanel {
 
   private async saveRemarkableConfig(): Promise<void> {
     const toggle = this.panel.querySelector('#remarkableToggle') as HTMLInputElement;
+    const ocrToggle = this.panel.querySelector('#remarkableOcrToggle') as HTMLInputElement;
     const source = this.panel.querySelector('#remarkableSource') as HTMLInputElement;
     const dest = this.panel.querySelector('#remarkableDest') as HTMLInputElement;
     const interval = this.panel.querySelector('#remarkableInterval') as HTMLSelectElement;
 
     await this.dropbox.saveRemarkableConfig({
       enabled: toggle.checked,
+      ocr_enabled: ocrToggle.checked,
       source_folder: source.value,
       dest_folder: dest.value,
       poll_interval_seconds: parseInt(interval.value),
