@@ -73,10 +73,13 @@ def pdf_to_images(pdf_bytes: bytes) -> list[Image.Image]:
 
 def segment_lines(
     image: Image.Image, min_line_height: int = 15
-) -> list[Image.Image]:
+) -> list[Image.Image | None]:
     """Split a page image into individual text lines using horizontal projection.
 
     Works well for reMarkable's lined paper with consistent horizontal text.
+    Returns a list of line images with ``None`` entries representing blank-line
+    gaps (paragraph breaks) where the vertical space between two text regions
+    exceeds the average line height.
     """
     gray = np.array(image.convert("L"))
     # Dark pixels = ink (low value = dark on white paper)
@@ -87,18 +90,34 @@ def segment_lines(
     threshold = projection.max() * 0.02 if projection.max() > 0 else 0
     in_line = projection > threshold
 
-    lines = []
+    # Collect (start_y, end_y) spans for each text region
+    spans: list[tuple[int, int]] = []
     start = None
     for i, val in enumerate(in_line):
         if val and start is None:
             start = i
         elif not val and start is not None:
             if i - start > min_line_height:
-                lines.append(image.crop((0, start, image.width, i)))
+                spans.append((start, i))
             start = None
-    # Handle line extending to bottom of page
     if start is not None and len(in_line) - start > min_line_height:
-        lines.append(image.crop((0, start, image.width, len(in_line))))
+        spans.append((start, len(in_line)))
+
+    if not spans:
+        return []
+
+    # Compute average line height to calibrate gap detection
+    avg_height = sum(e - s for s, e in spans) / len(spans)
+
+    lines: list[Image.Image | None] = []
+    for idx, (s, e) in enumerate(spans):
+        # Insert a None (blank line) when the gap from the previous text region
+        # is larger than the average line height
+        if idx > 0:
+            gap = s - spans[idx - 1][1]
+            if gap > avg_height:
+                lines.append(None)
+        lines.append(image.crop((0, s, image.width, e)))
 
     return lines
 
@@ -141,12 +160,12 @@ def ocr_pdf(
         images = pdf_to_images(pdf_bytes)
 
         # First pass: segment all pages to get total line count
-        all_page_lines: list[list[Image.Image]] = []
+        all_page_lines: list[list[Image.Image | None]] = []
         total_lines = 0
         for page_img in images:
             page_lines = segment_lines(page_img)
             all_page_lines.append(page_lines)
-            total_lines += len(page_lines)
+            total_lines += sum(1 for l in page_lines if l is not None)
 
         logger.info(
             "%d page(s), %d lines detected", len(images), total_lines
@@ -158,6 +177,9 @@ def ocr_pdf(
         for page_num, page_lines in enumerate(all_page_lines):
             if page_lines:
                 for line_img in page_lines:
+                    if line_img is None:
+                        all_texts.append("")  # paragraph break
+                        continue
                     texts = recognise_lines([line_img])
                     all_texts.extend(texts)
                     lines_done += 1

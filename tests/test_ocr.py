@@ -146,6 +146,38 @@ def test_segment_lines_line_at_bottom():
     assert len(lines) == 1
 
 
+def test_segment_lines_inserts_gap_marker():
+    """A large gap between text regions produces a None paragraph break."""
+    from server.ocr import segment_lines
+
+    # Two 30px dark bands separated by a 60px gap (> avg line height of 30)
+    img_array = np.ones((200, 100), dtype=np.uint8) * 255
+    img_array[10:40, :] = 50   # line 1
+    img_array[100:130, :] = 50  # line 2 (gap = 60px, avg height = 30px)
+    img = Image.fromarray(img_array, mode="L").convert("RGB")
+
+    lines = segment_lines(img)
+    assert len(lines) == 3  # line, None, line
+    assert lines[0] is not None
+    assert lines[1] is None
+    assert lines[2] is not None
+
+
+def test_segment_lines_no_gap_marker_for_small_gaps():
+    """Closely spaced lines do not produce paragraph breaks."""
+    from server.ocr import segment_lines
+
+    # Two 30px dark bands separated by a 20px gap (< avg height of 30)
+    img_array = np.ones((200, 100), dtype=np.uint8) * 255
+    img_array[10:40, :] = 50   # line 1
+    img_array[60:90, :] = 50   # line 2 (gap = 20px, avg height = 30px)
+    img = Image.fromarray(img_array, mode="L").convert("RGB")
+
+    lines = segment_lines(img)
+    assert len(lines) == 2  # no None markers
+    assert all(l is not None for l in lines)
+
+
 # ---------------------------------------------------------------------------
 # recognise_lines
 # ---------------------------------------------------------------------------
