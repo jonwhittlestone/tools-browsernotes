@@ -1,15 +1,44 @@
-"""Tests for the OCR pipeline (server/ocr.py).
+"""Tests for the OCR pipeline (server/ocr.py) and sync integration.
 
 All ML dependencies (torch, transformers, fitz) are mocked so tests run
 fast without downloading models.
 """
 
+import json
+import os
 import sys
 from unittest.mock import MagicMock, patch
 
+import httpx
 import numpy as np
 import pytest
 from PIL import Image
+
+from server.config import DATA_DIR
+
+TOKENS_FILE = os.path.join(DATA_DIR, "dropbox_tokens.json")
+
+
+def _write_tokens(tokens: dict):
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(TOKENS_FILE, "w") as f:
+        json.dump(tokens, f)
+
+
+def _base_tokens(**extra):
+    tokens = {"access_token": "test-token", "refresh_token": "test-refresh"}
+    tokens.update(extra)
+    return tokens
+
+
+@pytest.fixture(autouse=True)
+def clean_tokens():
+    """Ensure clean state for each test."""
+    if os.path.exists(TOKENS_FILE):
+        os.remove(TOKENS_FILE)
+    yield
+    if os.path.exists(TOKENS_FILE):
+        os.remove(TOKENS_FILE)
 
 
 # ---------------------------------------------------------------------------
@@ -261,3 +290,133 @@ def test_ocr_pdf_unloads_model_on_error():
         ocr_pdf(b"bad-data")
 
     mock_unload.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# /api/remarkable/ocr endpoint
+# ---------------------------------------------------------------------------
+
+
+def test_ocr_endpoint_requires_auth(client):
+    response = client.post("/api/remarkable/ocr", json={"path": "/test.pdf"})
+    assert response.status_code == 401
+
+
+def test_ocr_endpoint_rejects_non_pdf(authed_client):
+    _write_tokens(_base_tokens())
+    response = authed_client.post("/api/remarkable/ocr", json={"path": "/test.txt"})
+    assert response.status_code == 400
+    assert "pdf" in response.json()["error"].lower()
+
+
+def test_ocr_endpoint_rejects_empty_path(authed_client):
+    _write_tokens(_base_tokens())
+    response = authed_client.post("/api/remarkable/ocr", json={"path": ""})
+    assert response.status_code == 400
+
+
+def test_ocr_endpoint_requires_dropbox(authed_client):
+    _write_tokens({"remarkable_sync": {}})
+    response = authed_client.post("/api/remarkable/ocr", json={"path": "/note.pdf"})
+    assert response.status_code == 400
+    assert "not connected" in response.json()["error"]
+
+
+def test_ocr_endpoint_success(authed_client):
+    _write_tokens(_base_tokens())
+
+    call_log = []
+
+    async def mock_request(method, url, tokens, **kwargs):
+        call_log.append(url)
+        if "download" in url:
+            return httpx.Response(200, content=b"fake-pdf-bytes")
+        if "upload" in url:
+            return httpx.Response(200, json={})
+        return httpx.Response(200, json={})
+
+    with (
+        patch("server.remarkable_sync._dropbox_request", side_effect=mock_request),
+        patch("server.remarkable_sync.ocr_pdf", return_value="Hello world\nLine two"),
+    ):
+        response = authed_client.post(
+            "/api/remarkable/ocr",
+            json={"path": "/folder/note.pdf"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "completed"
+    assert data["text_path"] == "/folder/note.txt"
+    assert data["lines"] == 2
+    assert "Hello world" in data["text"]
+    # Verify upload was called
+    assert any("upload" in url for url in call_log)
+
+
+def test_ocr_endpoint_empty_result(authed_client):
+    _write_tokens(_base_tokens())
+
+    async def mock_request(method, url, tokens, **kwargs):
+        if "download" in url:
+            return httpx.Response(200, content=b"fake-pdf-bytes")
+        return httpx.Response(200, json={})
+
+    with (
+        patch("server.remarkable_sync._dropbox_request", side_effect=mock_request),
+        patch("server.remarkable_sync.ocr_pdf", return_value=""),
+    ):
+        response = authed_client.post(
+            "/api/remarkable/ocr",
+            json={"path": "/folder/note.pdf"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["text_path"] is None
+    assert data["lines"] == 0
+
+
+def test_ocr_endpoint_download_failure(authed_client):
+    _write_tokens(_base_tokens())
+
+    async def mock_request(method, url, tokens, **kwargs):
+        return httpx.Response(404, text="not found")
+
+    with patch("server.remarkable_sync._dropbox_request", side_effect=mock_request):
+        response = authed_client.post(
+            "/api/remarkable/ocr",
+            json={"path": "/missing/note.pdf"},
+        )
+
+    assert response.status_code == 400
+    assert "download" in response.json()["error"].lower()
+
+
+# ---------------------------------------------------------------------------
+# ocr_enabled config toggle
+# ---------------------------------------------------------------------------
+
+
+def test_status_includes_ocr_enabled(authed_client):
+    _write_tokens(_base_tokens(remarkable_sync={"ocr_enabled": False}))
+    response = authed_client.get("/api/remarkable/status")
+    assert response.status_code == 200
+    assert response.json()["ocr_enabled"] is False
+
+
+def test_status_ocr_enabled_defaults_true(authed_client):
+    _write_tokens(_base_tokens(remarkable_sync={}))
+    response = authed_client.get("/api/remarkable/status")
+    assert response.status_code == 200
+    assert response.json()["ocr_enabled"] is True
+
+
+def test_config_saves_ocr_enabled(authed_client):
+    _write_tokens(_base_tokens(remarkable_sync={}))
+    authed_client.post(
+        "/api/remarkable/config",
+        json={"ocr_enabled": False},
+    )
+    response = authed_client.get("/api/remarkable/status")
+    assert response.json()["ocr_enabled"] is False
