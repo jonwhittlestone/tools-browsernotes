@@ -420,3 +420,159 @@ def test_config_saves_ocr_enabled(authed_client):
     )
     response = authed_client.get("/api/remarkable/status")
     assert response.json()["ocr_enabled"] is False
+
+
+# ---------------------------------------------------------------------------
+# _append_progress_log
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_append_progress_log_creates_new_file():
+    """Creates a fresh log when no existing file is found on Dropbox."""
+    uploaded = {}
+
+    async def mock_request(method, url, tokens, **kwargs):
+        if "download" in url:
+            return httpx.Response(409, text="not found")
+        if "upload" in url:
+            uploaded["body"] = kwargs.get("content", b"").decode()
+            return httpx.Response(200, json={})
+        return httpx.Response(200, json={})
+
+    with patch("server.remarkable_sync._dropbox_request", side_effect=mock_request):
+        from server.remarkable_sync import _append_progress_log
+
+        await _append_progress_log({"access_token": "t"}, "/dest", "test message")
+
+    assert "test message" in uploaded["body"]
+    assert uploaded["body"].count("\n") >= 1
+
+
+@pytest.mark.asyncio
+async def test_append_progress_log_appends_to_existing():
+    """Appends to an existing log file downloaded from Dropbox."""
+    existing_log = "[2026-01-01 00:00:00] old entry\n"
+    uploaded = {}
+
+    async def mock_request(method, url, tokens, **kwargs):
+        if "download" in url:
+            return httpx.Response(200, content=existing_log.encode())
+        if "upload" in url:
+            uploaded["body"] = kwargs.get("content", b"").decode()
+            return httpx.Response(200, json={})
+        return httpx.Response(200, json={})
+
+    with patch("server.remarkable_sync._dropbox_request", side_effect=mock_request):
+        from server.remarkable_sync import _append_progress_log
+
+        await _append_progress_log({"access_token": "t"}, "/dest", "new entry")
+
+    assert "old entry" in uploaded["body"]
+    assert "new entry" in uploaded["body"]
+
+
+@pytest.mark.asyncio
+async def test_append_progress_log_caps_at_max_lines():
+    """Trims oldest lines when the log exceeds MAX_PROGRESS_LOG_LINES."""
+    from server.remarkable_sync import MAX_PROGRESS_LOG_LINES
+
+    existing_lines = [f"[2026-01-01 00:00:00] line {i}" for i in range(MAX_PROGRESS_LOG_LINES)]
+    existing_log = "\n".join(existing_lines) + "\n"
+    uploaded = {}
+
+    async def mock_request(method, url, tokens, **kwargs):
+        if "download" in url:
+            return httpx.Response(200, content=existing_log.encode())
+        if "upload" in url:
+            uploaded["body"] = kwargs.get("content", b"").decode()
+            return httpx.Response(200, json={})
+        return httpx.Response(200, json={})
+
+    with patch("server.remarkable_sync._dropbox_request", side_effect=mock_request):
+        from server.remarkable_sync import _append_progress_log
+
+        await _append_progress_log({"access_token": "t"}, "/dest", "overflow entry")
+
+    result_lines = uploaded["body"].strip().split("\n")
+    assert len(result_lines) == MAX_PROGRESS_LOG_LINES
+    # Oldest line should be trimmed, newest should be present
+    assert "line 0" not in uploaded["body"]
+    assert "overflow entry" in uploaded["body"]
+
+
+@pytest.mark.asyncio
+async def test_append_progress_log_survives_upload_failure():
+    """Does not raise when the upload to Dropbox fails."""
+
+    async def mock_request(method, url, tokens, **kwargs):
+        if "download" in url:
+            return httpx.Response(409, text="not found")
+        if "upload" in url:
+            raise ConnectionError("network down")
+        return httpx.Response(200, json={})
+
+    with patch("server.remarkable_sync._dropbox_request", side_effect=mock_request):
+        from server.remarkable_sync import _append_progress_log
+
+        # Should not raise
+        await _append_progress_log({"access_token": "t"}, "/dest", "msg")
+
+
+# ---------------------------------------------------------------------------
+# _run_ocr_for_file progress logging
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_run_ocr_writes_progress_entries():
+    """Background OCR writes started + completed entries to the progress log."""
+    log_messages = []
+
+    async def mock_append_log(tokens, dest_folder, message):
+        log_messages.append(message)
+
+    async def mock_download(tokens, path):
+        return b"fake-pdf"
+
+    async def mock_upload(tokens, path, content):
+        pass
+
+    with (
+        patch("server.remarkable_sync._append_progress_log", side_effect=mock_append_log),
+        patch("server.remarkable_sync._download_file", side_effect=mock_download),
+        patch("server.remarkable_sync._upload_text", side_effect=mock_upload),
+        patch("server.remarkable_sync.ocr_pdf", return_value="Hello\nWorld"),
+        patch("server.remarkable_sync._load_tokens", return_value={}),
+        patch("server.remarkable_sync._save_tokens"),
+    ):
+        from server.remarkable_sync import _run_ocr_for_file
+
+        config = {"dest_folder": "/dest", "sync_log": []}
+        await _run_ocr_for_file({"access_token": "t"}, "/dest/note.pdf", config, "2026-01-01")
+
+    assert any("OCR started" in m for m in log_messages)
+    assert any("completed" in m for m in log_messages)
+
+
+@pytest.mark.asyncio
+async def test_run_ocr_logs_error_on_failure():
+    """Background OCR writes an error entry when the download fails."""
+    log_messages = []
+
+    async def mock_append_log(tokens, dest_folder, message):
+        log_messages.append(message)
+
+    async def mock_download(tokens, path):
+        raise ConnectionError("download failed")
+
+    with (
+        patch("server.remarkable_sync._append_progress_log", side_effect=mock_append_log),
+        patch("server.remarkable_sync._download_file", side_effect=mock_download),
+    ):
+        from server.remarkable_sync import _run_ocr_for_file
+
+        config = {"dest_folder": "/dest"}
+        await _run_ocr_for_file({"access_token": "t"}, "/dest/note.pdf", config, "2026-01-01")
+
+    assert any("error" in m for m in log_messages)
