@@ -32,6 +32,9 @@ COPY web/index.html web/login.html web/styles.css web/manifest.webmanifest web/s
 # Create data directory
 RUN mkdir -p /app/data
 
+# Cache Hugging Face model downloads in the persistent data volume
+ENV TRANSFORMERS_CACHE=/app/data/models
+
 EXPOSE 3004
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
