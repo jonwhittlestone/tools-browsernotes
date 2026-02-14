@@ -39,6 +39,7 @@ def _load_model():
     _model = VisionEncoderDecoderModel.from_pretrained(
         model_name,
         torch_dtype=torch.float16,
+        use_safetensors=True,  # Avoids torch.load CVE-2025-32434 check
     )
     _model.eval()
 
