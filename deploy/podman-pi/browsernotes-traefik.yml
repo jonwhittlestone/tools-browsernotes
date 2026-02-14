@@ -5,7 +5,8 @@ http:
       entryPoints:
         - web
       middlewares:
-        - redirect-to-https
+        - rate-limit
+        - https-redirect
       service: browsernotes-service
 
     browsernotes-secure:
@@ -13,18 +14,23 @@ http:
       entryPoints:
         - websecure
       middlewares:
-        - browsernotes-strip
         - rate-limit
         - headers-security
+        - browsernotes-strip-prefix
       service: browsernotes-service
       tls:
         certResolver: letsencrypt
 
   middlewares:
-    browsernotes-strip:
+    browsernotes-strip-prefix:
       stripPrefix:
         prefixes:
           - "/browsernotes"
+
+    https-redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
 
   services:
     browsernotes-service:
