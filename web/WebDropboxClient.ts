@@ -146,10 +146,21 @@ export class WebDropboxClient {
     const data = await resp.json();
     return data.entries;
   }
+
+  async triggerRemarkableOcr(path: string): Promise<RemarkableOcrResult> {
+    const resp = await fetch(`${basePath()}/api/remarkable/ocr`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+    if (!resp.ok) throw new Error(`Remarkable OCR failed: ${resp.status}`);
+    return resp.json();
+  }
 }
 
 export interface RemarkableSyncStatus {
   enabled: boolean;
+  ocr_enabled: boolean;
   source_folder: string;
   dest_folder: string;
   poll_interval_seconds: number;
@@ -159,6 +170,7 @@ export interface RemarkableSyncStatus {
 
 export interface RemarkableSyncConfig {
   enabled: boolean;
+  ocr_enabled: boolean;
   source_folder: string;
   dest_folder: string;
   poll_interval_seconds: number;
@@ -179,4 +191,14 @@ export interface SyncLogEntry {
   status: 'copied' | 'skipped' | 'error';
   size_bytes: number;
   error?: string;
+  ocr_status?: string;
+  ocr_text_path?: string;
+  ocr_lines?: number;
+}
+
+export interface RemarkableOcrResult {
+  status: string;
+  text_path: string | null;
+  lines: number;
+  text: string;
 }
