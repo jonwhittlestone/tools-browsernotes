@@ -106,16 +106,15 @@ def segment_lines(
     if not spans:
         return []
 
-    # Compute average line height to calibrate gap detection
-    avg_height = sum(e - s for s, e in spans) / len(spans)
+    # A gap larger than twice the minimum line height indicates a paragraph break.
+    # Using min_line_height avoids skew from multi-line spans that inflate averages.
+    gap_threshold = min_line_height * 2
 
     lines: list[Image.Image | None] = []
     for idx, (s, e) in enumerate(spans):
-        # Insert a None (blank line) when the gap from the previous text region
-        # is larger than the average line height
         if idx > 0:
             gap = s - spans[idx - 1][1]
-            if gap > avg_height:
+            if gap > gap_threshold:
                 lines.append(None)
         lines.append(image.crop((0, s, image.width, e)))
 

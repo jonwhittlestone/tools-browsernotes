@@ -525,7 +525,7 @@ Extend existing endpoints:
 **Edit: `server/remarkable_sync.py`**
 
 Add helper:
-- `_append_progress_log(tokens, dest_folder, message)` — Downloads `{dest_folder}/_ocr-progress.log` from Dropbox (or starts empty if not found), appends `[{timestamp}] {message}\n`, trims to last 200 lines, re-uploads.
+- `_append_progress_log(tokens, dest_folder, message)` — Downloads `{dest_folder}/_ocr-progress-log.md` from Dropbox (or starts empty if not found), appends `[{timestamp}] {message}\n`, trims to last 200 lines, re-uploads.
 
 Update `_run_ocr_for_file()`:
 - Extract `dest_folder` from config (the remarkable sync dest root)
@@ -644,7 +644,7 @@ curl -X POST https://howapped.zapto.org/browsernotes/api/remarkable/ocr \
   --cookie "session=..."
 
 # Check progress log on Dropbox
-# Open _remarkable-emails-via-browsernotes/_ocr-progress.log in Obsidian
+# Open _remarkable-emails-via-browsernotes/_ocr-progress-log.md in Obsidian
 ```
 
 ## References

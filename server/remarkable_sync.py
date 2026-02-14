@@ -146,14 +146,14 @@ async def _upload_text(tokens: dict, path: str, content: str) -> None:
     )
 
 
-PROGRESS_LOG_NAME = "_ocr-progress.log"
+PROGRESS_LOG_NAME = "_ocr-progress-log.md"
 MAX_PROGRESS_LOG_LINES = 200
 
 
 async def _append_progress_log(tokens: dict, dest_folder: str, message: str) -> None:
     """Append a timestamped line to the OCR progress log on Dropbox.
 
-    The log file lives at {dest_folder}/_ocr-progress.log and is viewable
+    The log file lives at {dest_folder}/_ocr-progress-log.md and is viewable
     from Obsidian, phone, or any Dropbox-synced device.
     """
     log_path = f"{dest_folder}/{PROGRESS_LOG_NAME}"
@@ -180,7 +180,7 @@ async def _append_progress_log(tokens: dict, dest_folder: str, message: str) -> 
 async def _run_ocr_for_file(tokens: dict, dest_path: str, config: dict, now: str) -> None:
     """Download PDF from Dropbox, run OCR, upload .txt alongside it.
 
-    Writes progress updates to _ocr-progress.log on Dropbox so the author
+    Writes progress updates to _ocr-progress-log.md on Dropbox so the author
     can check status from Obsidian or any synced device.
 
     Runs in background — errors are logged but never propagate.
